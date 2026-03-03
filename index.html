@@ -289,6 +289,20 @@
         let renderedMessageIds = new Set();
         let peerIdToProfileId = {}; // Host-only: Maps WebRTC peer IDs to our profile IDs for cleanup
 
+        // --- ICE SERVER FAILSAFE (Forces WebRTC through firewalls) ---
+        const PEER_CONFIG = {
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:global.stun.twilio.com:3478' }
+                    // You can add your own TURN server here for 100% reliability on school/work networks:
+                    // { urls: 'turn:your-turn-server.com', username: 'user', credential: 'password' }
+                ]
+            }
+        };
+
         function toggleInfoPanel() { document.getElementById('info-panel').classList.toggle('open'); }
         function toggleMobileMenu(id) { 
             const el = document.getElementById(id);
@@ -609,7 +623,7 @@
             if (networkStates[net]) { if (net === userProfile.channel) renderUserList(net); return; }
             addSystemMessage(`Disbanding into ${net}...`, net);
             const hostId = 'disband-net-' + net.replace(/[^a-zA-Z0-9]/g, '');
-            const peer = new Peer(); let resolved = false;
+            const peer = new Peer(PEER_CONFIG); let resolved = false;
             peer.on('open', () => {
                 const conn = peer.connect(hostId, { reliable: true });
                 conn.on('open', () => { resolved = true; setupGuestP2P(net, peer, conn); });
@@ -624,7 +638,7 @@
         }
 
         function becomeHostP2P(net, hostId) {
-            const hostPeer = new Peer(hostId);
+            const hostPeer = new Peer(hostId, PEER_CONFIG);
             p2pInstances[net] = { peer: hostPeer, isHost: true, connections: [] };
             hostPeer.on('open', () => {
                 networkStates[net] = { isHost: true, users: [{ id: userProfile.id, name: userProfile.name, avatarUrl: userProfile.avatar, isRoomHost: true }] };
@@ -636,7 +650,7 @@
                     if (data.type === 'AUTH') {
                         if (roomPasswords[net] && data.pass !== roomPasswords[net]) { conn.send({ type: 'AUTH_FAILED' }); setTimeout(() => conn.close(), 500); return; }
                         p2pInstances[net].connections.push(conn);
-                        peerIdToProfileId[conn.peer] = data.user.id; // Map WebRTC ID to our Profile ID
+                        peerIdToProfileId[conn.peer] = data.user.id;
                         if (!networkStates[net].users.find(u => u.id === data.user.id)) { networkStates[net].users.push(data.user); addSystemMessage(`${data.user.name} joined.`, net); }
                         renderUserList(net);
                         broadcastToNetwork(net, { type: 'USER_LIST_SYNC', users: networkStates[net].users }); 
