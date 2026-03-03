@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Disband</title>
-    <!-- Custom Favicon (SVG Logo) -->
     <link id="favicon" rel="icon" type="image/svg+xml" href="">
-    <!-- Import PeerJS for Serverless WebRTC Signaling -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
@@ -34,11 +32,8 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Nunito', sans-serif; -webkit-tap-highlight-color: transparent; }
-        
-        /* 100dvh prevents mobile browser bars from hiding the input */
         body { height: 100dvh; background-color: var(--bg-color); color: var(--text-main); overflow: hidden; display: flex; align-items: center; justify-content: center; transition: background-color 0.3s ease, color 0.3s ease; }
 
-        /* Custom Bouncy Scrollbars */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 20px; border: 2px solid var(--bg-color); opacity: 0.8; }
@@ -46,19 +41,13 @@
         #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; transition: opacity 0.5s ease; }
 
         #splash-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 10000; transition: opacity 0.5s ease;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; transition: opacity 0.5s ease;
         }
         .spinner { width: 60px; height: 60px; border-radius: 50%; box-shadow: var(--clay-outer); position: relative; animation: pulse 2s infinite ease-in-out; }
         .spinner::after { content: ''; position: absolute; top: 15px; left: 15px; right: 15px; bottom: 15px; background-color: var(--accent); border-radius: 50%; box-shadow: var(--clay-inner); }
         .splash-text { margin-top: 30px; font-weight: 800; font-size: 1.4rem; color: var(--accent); letter-spacing: 2px; }
 
-        @keyframes pulse {
-            0% { transform: scale(0.9); box-shadow: var(--clay-outer); }
-            50% { transform: scale(1.1); box-shadow: 15px 15px 20px rgb(163, 177, 198, 0.4), -15px -15px 20px rgba(255, 255, 255, 0.4); }
-            100% { transform: scale(0.9); box-shadow: var(--clay-outer); }
-        }
+        @keyframes pulse { 0% { transform: scale(0.9); box-shadow: var(--clay-outer); } 50% { transform: scale(1.1); box-shadow: 15px 15px 20px rgb(163, 177, 198, 0.4), -15px -15px 20px rgba(255, 255, 255, 0.4); } 100% { transform: scale(0.9); box-shadow: var(--clay-outer); } }
 
         #onboarding, .modal-container {
             display: none; width: 90%; max-width: 380px; padding: 50px 30px; border-radius: 35px; background-color: var(--bg-color); box-shadow: var(--clay-outer);
@@ -66,9 +55,7 @@
         }
         
         #info-panel {
-            position: fixed; top: 0; right: -400px; width: 350px; height: 100%; background-color: var(--bg-color);
-            box-shadow: var(--clay-outer); z-index: 6000; padding: 60px 30px; transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex; flex-direction: column; gap: 20px;
+            position: fixed; top: 0; right: -400px; width: 350px; height: 100%; background-color: var(--bg-color); box-shadow: var(--clay-outer); z-index: 6000; padding: 60px 30px; transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; gap: 20px;
         }
         #info-panel.open { right: 0; }
         .info-close { position: absolute; top: 20px; right: 20px; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); }
@@ -98,12 +85,9 @@
         .clay-btn:hover { transform: scale(1.02); }
         .clay-btn:active { box-shadow: var(--clay-button-active); transform: scale(0.95); }
 
-        /* Main App Layout */
         #main-app { display: none; width: 100%; height: 100dvh; overflow: hidden; position: relative; z-index: 10; flex-direction: row; }
         
-        /* Docked Sidebar Container */
         #left-sidebar { display: flex; flex-direction: row; height: 100%; flex-shrink: 0; z-index: 500; transition: left 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-
         #servers { width: 80px; padding: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 15px; background: var(--bg-color); border-right: 1px solid rgba(0,0,0,0.05); }
         .server-icon { width: 50px; height: 50px; border-radius: 50%; background-color: var(--bg-color); box-shadow: var(--clay-outer); cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; color: var(--accent); flex-shrink: 0; }
         .server-icon:hover { border-radius: 15px; box-shadow: var(--clay-inner); transform: scale(1.1); }
@@ -111,32 +95,30 @@
 
         #channels { width: 240px; padding: 20px 10px; display: flex; flex-direction: column; gap: 15px; background: var(--bg-color); box-shadow: var(--clay-outer); border-top-right-radius: 30px; border-bottom-right-radius: 30px; margin: 15px 0 15px 10px; transition: all 0.3s ease; }
         .channel-header { font-weight: 800; color: var(--text-main); font-size: 1.2rem; padding: 0 10px 15px; border-bottom: 2px solid rgba(163, 177, 198, 0.2); display: flex; justify-content: space-between; align-items: center; }
-        .channel-item { padding: 12px 15px; border-radius: 12px; cursor: pointer; color: var(--text-muted); font-weight: 700; transition: 0.2s; display: flex; justify-content: space-between; margin-bottom: 5px;}
+        .channel-item { padding: 12px 15px; border-radius: 12px; cursor: pointer; color: var(--text-muted); font-weight: 700; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;}
         .channel-item:hover, .channel-item.active { box-shadow: var(--clay-inner); color: var(--text-main); }
-        .media-tag { font-size: 0.75rem; background: var(--accent); color: white; padding: 2px 6px; border-radius: 8px; margin-left: 5px; font-weight: 800; }
+        .channel-item.media-room { background: rgba(0,0,0,0.02); border-left: 4px solid var(--accent); }
+        [data-theme="dark"] .channel-item.media-room { background: rgba(255,255,255,0.02); }
 
-        /* Chat Area */
         #chat-area { flex-grow: 1; display: flex; flex-direction: column; padding: 15px; gap: 15px; min-width: 0; position: relative; }
+        
+        /* Media Player Box */
+        #media-container { display: none; flex-direction: column; gap: 10px; padding: 15px; border-radius: 20px; box-shadow: var(--clay-outer); background: var(--bg-color); flex-shrink: 0; animation: popInBounce 0.4s forwards; position: relative; overflow: hidden; }
+        .media-header { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 1rem; color: var(--accent); padding-bottom: 5px; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .media-feed { width: 100%; max-height: 40vh; border-radius: 12px; background: #000; object-fit: contain; box-shadow: var(--clay-inner); }
+        .media-voice-avatar { width: 80px; height: 80px; border-radius: 50%; box-shadow: var(--clay-outer); background-size: cover; background-position: center; margin: 20px auto; animation: pulse 2s infinite; }
+        .media-controls { display: flex; gap: 10px; justify-content: center; margin-top: 5px; }
+
         #messages { flex-grow: 1; padding: 20px; border-radius: 30px; box-shadow: var(--clay-inner); overflow-y: auto; display: flex; flex-direction: column; gap: 25px; }
         
-        /* Media Session Tray */
-        #media-container { display: none; gap: 15px; padding: 15px; background: rgba(0,0,0,0.05); border-radius: 25px; box-shadow: var(--clay-inner); overflow-x: auto; flex-shrink: 0; flex-wrap: nowrap; }
-        [data-theme="dark"] #media-container { background: rgba(255,255,255,0.05); }
-        .media-wrapper { position: relative; flex-shrink: 0; border-radius: 15px; overflow: hidden; box-shadow: var(--clay-outer); background: #000; display: flex; align-items: center; justify-content: center; width: 180px; height: 120px; }
-        .media-wrapper video { width: 100%; height: 100%; object-fit: cover; }
-        .media-wrapper.voice-only { background: var(--bg-color); }
-        .media-wrapper .voice-avatar { width: 70px; height: 70px; border-radius: 50%; background-size: cover; background-position: center; box-shadow: 0 0 15px var(--accent); animation: pulseVoice 1.5s infinite; }
-        @keyframes pulseVoice { 0% { transform: scale(0.95); box-shadow: 0 0 10px var(--accent); } 50% { transform: scale(1.05); box-shadow: 0 0 25px var(--accent); } 100% { transform: scale(0.95); box-shadow: 0 0 10px var(--accent); } }
-
-        @keyframes popInBounce { 0% { opacity: 0; transform: scale(0.5) translateX(-40px); } 60% { opacity: 1; transform: scale(1.05) translateX(10px); } 80% { transform: scale(0.98) translateX(-5px); } 100% { opacity: 1; transform: scale(1) translateX(0); } }
-        .message { display: flex; gap: 15px; animation: popInBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; transform-origin: left center; }
+        @keyframes popInBounce { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 60% { opacity: 1; transform: scale(1.02) translateY(-2px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+        .message { display: flex; gap: 15px; animation: popInBounce 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         .msg-avatar { width: 42px; height: 42px; border-radius: 50%; box-shadow: var(--clay-outer); background-size: cover; background-position: center; flex-shrink: 0; }
         .msg-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; width: 100%; }
         .msg-author { font-weight: 800; color: var(--text-main); font-size: 1.05rem; }
         .msg-content { color: var(--text-muted); line-height: 1.5; font-weight: 600; font-size: 1rem; word-break: break-word; }
-        .system-message { transition: opacity 0.5s ease, transform 0.5s ease; opacity: 0.8; }
+        .system-message { opacity: 0.8; font-style: italic; }
 
-        /* Rich Media Containers & Lightbox Modal */
         .msg-image { max-width: 250px; max-height: 300px; border-radius: 15px; box-shadow: var(--clay-outer); margin-top: 10px; cursor: zoom-in; object-fit: contain; transition: 0.2s; }
         .msg-image:hover { transform: scale(1.02); }
         #image-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 20000; display: none; align-items: center; justify-content: center; cursor: zoom-out; padding: 20px;}
@@ -144,25 +126,18 @@
 
         .msg-video { width: 100%; max-width: 500px; border-radius: 15px; box-shadow: var(--clay-outer); margin-top: 10px; background: #000; }
         .embed-container { margin-top: 10px; border-radius: 15px; overflow: hidden; box-shadow: var(--clay-outer); width: 100%; max-width: 500px; aspect-ratio: 16/9; }
-        
-        .rich-link-preview { margin-top: 10px; padding: 15px; border-radius: 12px; background: rgba(0,0,0,0.05); box-shadow: var(--clay-inner); border-left: 4px solid var(--accent); display: flex; flex-direction: column; gap: 6px; text-decoration: none; max-width: 450px; overflow: hidden; transition: transform 0.2s; }
-        [data-theme="dark"] .rich-link-preview { background: rgba(255,255,255,0.05); }
-        .rich-link-preview:hover { transform: translateY(-2px); box-shadow: var(--clay-outer); }
-        .rich-link-provider { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 1px; }
-        .rich-link-title { font-weight: 800; color: var(--accent); font-size: 1.05rem; line-height: 1.3; }
-        .rich-link-desc { font-size: 0.9rem; color: var(--text-main); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
-        .rich-link-img { width: 100%; border-radius: 8px; margin-top: 8px; object-fit: cover; max-height: 250px; box-shadow: var(--clay-outer); }
-        .link-text { color: var(--accent); font-weight: 700; text-decoration: none; border-bottom: 1px dashed var(--accent); }
+        .link-preview { margin-top: 10px; padding: 12px; border-radius: 15px; box-shadow: var(--clay-inner); background: rgba(255,255,255,0.05); display: flex; align-items: center; gap: 10px; text-decoration: none; transition: 0.2s; max-width: 400px;}
+        .link-preview:hover { transform: translateY(-2px); box-shadow: var(--clay-outer); }
+        .link-preview-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .link-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--accent); font-weight: 700; font-size: 0.9rem; }
 
-        /* Bouncing Typing Indicator */
         .typing-indicator { display: none; align-items: center; gap: 6px; font-size: 0.9rem; color: var(--text-muted); padding: 0 5px 10px 15px; font-weight: 700; height: 20px; }
         .typing-dots { display: flex; gap: 3px; margin-top: 2px; }
-        .typing-dots span { display: inline-block; width: 4px; height: 4px; background-color: var(--text-muted); border-radius: 50%; animation: typingBounce 1.4s infinite ease-in-out both; }
+        .typing-dots span { display: inline-block; width: 5px; height: 5px; background-color: var(--accent); border-radius: 50%; animation: typingBounce 1.4s infinite ease-in-out both; }
         .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
         .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes typingBounce { 0%, 80%, 100% { transform: scale(0); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }
+        @keyframes typingBounce { 0%, 80%, 100% { transform: scale(0); opacity: 0.3; } 40% { transform: scale(1); opacity: 1; } }
 
-        /* Input Area safe padding for mobile bottom bars */
         #input-area { display: flex; gap: 10px; align-items: center; padding-bottom: env(safe-area-inset-bottom, 5px); }
         #message-input { flex-grow: 1; padding: 18px 25px; font-size: 1.1rem; border-radius: 20px; text-align: left; }
         .input-actions { display: flex; gap: 10px; }
@@ -174,11 +149,9 @@
         .user-name { font-weight: 700; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         .status-connected { margin-top: auto; padding-top: 15px; border-top: 2px solid rgba(163, 177, 198, 0.2); font-weight: 800; font-size: 0.9rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; justify-content: center; }
-        [data-theme="dark"] .status-connected { border-top-color: rgba(40, 40, 60, 0.5); }
         .status-dot { width: 10px; height: 10px; background-color: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); animation: pulseStatus 2s infinite; }
         @keyframes pulseStatus { 0% { transform: scale(0.9); opacity: 0.7; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(0.9); opacity: 0.7; } }
 
-        /* Mobile Layout */
         .mobile-toggle { position: absolute; top: 15px; padding: 10px; z-index: 700; display: none; width: 45px; height: 45px; align-items: center; justify-content: center; border-radius: 50%; background: var(--bg-color); box-shadow: var(--clay-outer); border: none; color: var(--accent); cursor: pointer; }
         #mobile-rooms-toggle { left: 15px; }
         #mobile-users-toggle { right: 15px; }
@@ -188,7 +161,6 @@
             #left-sidebar { position: fixed; left: -350px; top: 0; box-shadow: 15px 0 30px rgba(0,0,0,0.1); z-index: 800; }
             #left-sidebar.active { left: 0; }
             #channels { margin: 0; border-radius: 0; box-shadow: none; border-right: 1px solid rgba(0,0,0,0.05); }
-            
             #users { position: fixed; right: -300px; height: 100dvh; top: 0; z-index: 800; margin: 0; border-radius: 0; box-shadow: -15px 0 30px rgba(0,0,0,0.1); }
             #users.active { right: 0; }
             .mobile-toggle { display: flex !important; }
@@ -215,12 +187,8 @@
         </div>
     </div>
 
-    <!-- Image Lightbox Modal -->
-    <div id="image-modal" onclick="this.style.display='none'">
-        <img id="modal-img" src="">
-    </div>
+    <div id="image-modal" onclick="this.style.display='none'"><img id="modal-img" src=""></div>
 
-    <!-- Generic Prompts Overlay -->
     <div id="custom-modal-overlay">
         <div id="custom-modal" class="modal-container">
             <h2 id="custom-modal-title" class="modal-title"></h2>
@@ -234,7 +202,6 @@
         </div>
     </div>
 
-    <!-- Settings Overlay -->
     <div id="settings-overlay">
         <div id="settings-modal" class="modal-container" style="display: flex;">
             <h2 class="modal-title">Settings</h2>
@@ -253,10 +220,9 @@
 
     <div id="splash-screen">
         <div class="spinner"></div>
-        <div class="splash-text">DISBAND</div>
+        <div class="splash-text">INITIALIZING DISBAND</div>
     </div>
 
-    <!-- Onboarding -->
     <div id="onboarding">
         <button class="clay-icon-btn theme-toggle-btn" onclick="toggleTheme()" title="Toggle Theme" id="theme-btn-1"></button>
         <button class="clay-icon-btn info-toggle-btn" onclick="toggleInfoPanel()" title="About Disband">?</button>
@@ -271,9 +237,7 @@
         <button class="clay-btn" onclick="saveProfileAndJoin()">Connect</button>
     </div>
 
-    <!-- Main Application UI -->
     <div id="main-app">
-        <!-- Mobile Sidebar Toggles & Dimmer -->
         <button class="mobile-toggle" id="mobile-rooms-toggle" onclick="toggleMobileMenu('left-sidebar')">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         </button>
@@ -282,7 +246,6 @@
         </button>
         <div id="mobile-overlay" onclick="closeAllMobileMenus()"></div>
 
-        <!-- Docked Left Sidebar (Servers + Rooms) -->
         <div id="left-sidebar">
             <div id="servers">
                 <div id="server-list-container" style="display: flex; flex-direction: column; gap: 15px; width: 100%; align-items: center;"></div>
@@ -295,14 +258,14 @@
             <div id="channels">
                 <div class="channel-header">
                     <span>Rooms</span>
-                    <div style="display:flex; gap:10px; align-items:center;">
-                        <button class="clay-icon-btn" style="width: 30px; height: 30px; color: var(--accent);" title="Voice Call" onclick="promptCreateMediaRoom('voice')">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <button class="clay-icon-btn" style="width: 32px; height: 32px; color: var(--accent);" title="Start Voice Chat" onclick="promptCreateMediaRoom('voice')">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                         </button>
-                        <button class="clay-icon-btn" style="width: 30px; height: 30px; color: var(--accent);" title="Screen Share" onclick="promptCreateMediaRoom('screen')">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                        <button class="clay-icon-btn" style="width: 32px; height: 32px; color: var(--accent);" title="Start Screen Share" onclick="promptCreateMediaRoom('screen')">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
                         </button>
-                        <button class="clay-icon-btn" id="create-room-btn" style="width: 30px; height: 30px; font-size: 1.2rem; display: none;" onclick="promptCreateRoom()" title="Create Protected Room">+</button>
+                        <button class="clay-icon-btn" id="create-room-btn" style="width: 32px; height: 32px; font-size: 1.2rem; display: none;" onclick="promptCreateRoom()" title="Create Protected Room">+</button>
                     </div>
                 </div>
                 <div id="channel-list-container" style="flex-grow: 1; overflow-y: auto;">
@@ -312,9 +275,20 @@
         </div>
 
         <div id="chat-area">
-            <!-- Dynamic Media Session Container -->
-            <div id="media-container"></div>
             
+            <!-- Dynamic Media Player -->
+            <div id="media-container">
+                <div class="media-header">
+                    <span id="media-title">Media Session</span>
+                    <div class="media-controls">
+                        <button class="clay-icon-btn" id="media-expand-btn" style="width:30px; height:30px; display:none;" onclick="document.getElementById('media-feed').requestFullscreen()">⛶</button>
+                        <button class="clay-icon-btn" style="width:30px; height:30px; color:#fff; background:#e53e3e; box-shadow:none;" onclick="hangUpMedia()">📞</button>
+                    </div>
+                </div>
+                <video id="media-feed" class="media-feed" autoplay playsinline style="display:none;"></video>
+                <div id="media-voice-avatar" class="media-voice-avatar" style="display:none;"></div>
+            </div>
+
             <div id="messages"></div>
             
             <div class="typing-indicator" id="typing-indicator">
@@ -349,15 +323,14 @@
         let userProfile = JSON.parse(localStorage.getItem('disband_profile')) || { id: crypto.randomUUID(), name: '', avatar: '', channel: '', currentRoom: '# general' };
         let joinedNetworks = JSON.parse(localStorage.getItem('disband_networks')) || [];
         let avatarBase64 = '', tempAvatarBase64 = '', isMainAppOpen = false, typingTimeout;
-        let roomPasswords = {}; 
-        let networkStates = {}, networkRooms = {}, p2pInstances = {}, chatHistory = JSON.parse(localStorage.getItem('disband_history')) || {};
+        let roomPasswords = {}, networkStates = {}, networkRooms = {}, p2pInstances = {}, chatHistory = JSON.parse(localStorage.getItem('disband_history')) || {};
         let currentRoom = '# general', currentLoadedCount = 10, renderedMessageIds = new Set();
         let peerIdToProfileId = {};
 
-        // --- MEDIA SESSION STATE ---
+        // --- MEDIA STATE ---
         let localMediaStream = null;
-        let activePeerCalls = {};
-
+        let incomingMediaCall = null;
+        
         let originalTitle = "Disband";
         let unreadCount = 0;
 
@@ -365,41 +338,22 @@
             if (document.visibilityState === 'visible') { unreadCount = 0; document.title = originalTitle; }
         });
 
-        // --- AUDIO SYNTH NOTIFIER (Cleaner chime sound) ---
         function playNotifySound() {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc1 = ctx.createOscillator(), osc2 = ctx.createOscillator(), gain = ctx.createGain();
-                osc1.type = 'sine'; osc2.type = 'sine';
-                osc1.connect(gain); osc2.connect(gain); gain.connect(ctx.destination);
-                
-                osc1.frequency.setValueAtTime(523.25, ctx.currentTime); 
+                const osc = ctx.createOscillator(), gain = ctx.createGain();
+                osc.type = 'sine'; osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.setValueAtTime(600, ctx.currentTime); 
                 gain.gain.setValueAtTime(0, ctx.currentTime);
                 gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.02);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
-                osc1.start(ctx.currentTime); osc1.stop(ctx.currentTime + 0.2);
-                
-                osc2.frequency.setValueAtTime(659.25, ctx.currentTime + 0.15); 
-                gain.gain.setValueAtTime(0, ctx.currentTime + 0.15);
-                gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.17);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-                osc2.start(ctx.currentTime + 0.15); osc2.stop(ctx.currentTime + 0.5);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+                osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.3);
             } catch(e) {}
         }
 
-        // --- STUN FAILSAFE ---
-        const PEER_CONFIG = {
-            config: {
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:global.stun.twilio.com:3478' }
-                ]
-            }
-        };
+        const PEER_CONFIG = { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:global.stun.twilio.com:3478' }] } };
 
-        // --- UI TOGGLES ---
         function toggleInfoPanel() { document.getElementById('info-panel').classList.toggle('open'); }
-        
         function toggleMobileMenu(id) { 
             const el = document.getElementById(id);
             const isActive = el.classList.contains('active');
@@ -450,10 +404,8 @@
 
         let currentTheme = localStorage.getItem('disband_theme') || 'dark';
         document.documentElement.setAttribute('data-theme', currentTheme);
-        
         const sunSVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
         const moonSVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
-        
         function updateThemeIcons() { 
             const icon = currentTheme === 'light' ? moonSVG : sunSVG; 
             if(document.getElementById('theme-btn-1')) document.getElementById('theme-btn-1').innerHTML = icon; 
@@ -476,7 +428,7 @@
                     if (savedProfile) { 
                         userProfile = JSON.parse(savedProfile); 
                         avatarBase64 = userProfile.avatar; 
-                        userProfile.currentRoom = '# general'; // reset default
+                        userProfile.currentRoom = '# general'; 
                         loadMainApp(); 
                     } else { 
                         document.getElementById('onboarding').style.display = 'flex'; 
@@ -507,7 +459,6 @@
             } 
         }
 
-        // --- SETTINGS ---
         function openSettings() {
             const overlay = document.getElementById('settings-overlay');
             document.getElementById('settings-name').value = userProfile.name;
@@ -521,10 +472,7 @@
         function closeSettings() {
             const overlay = document.getElementById('settings-overlay');
             overlay.style.opacity = '0';
-            setTimeout(() => {
-                overlay.style.display = 'none';
-                document.getElementById('settings-modal').style.display = 'none';
-            }, 300);
+            setTimeout(() => { overlay.style.display = 'none'; document.getElementById('settings-modal').style.display = 'none'; }, 300);
         }
 
         function applySettings() {
@@ -559,7 +507,6 @@
             document.getElementById('onboarding').style.display = 'none'; loadMainApp();
         }
 
-        // --- SERVER MANAGEMENT ---
         async function promptNewServer() {
             const result = await showCustomModal("Join New Channel", "Enter a New Channel", "prompt_with_pass", ["Channel Name", "Password (Optional)"]);
             if (result && result.input.trim() !== '') {
@@ -587,18 +534,24 @@
         // --- MEDIA ROOM CREATION ---
         async function promptCreateMediaRoom(type) {
             const net = userProfile.channel;
-            if (!networkStates[net]?.isHost) { return showCustomModal("Denied", "Only the Host can create media rooms!", "alert"); }
             
+            // Only 1 media room per network rule
+            if (networkRooms[net] && networkRooms[net].some(r => r.mediaType)) {
+                return showCustomModal("Limit Reached", "A media session is already active in this channel.", "alert");
+            }
+
             const titleStr = type === 'voice' ? 'Voice Call' : 'Screen Share';
-            const result = await showCustomModal("New " + titleStr, `Create a restricted media room (Max 4 Viewers)`, "prompt_with_pass", ["Room Name", "Password (Optional)"]);
+            const result = await showCustomModal("New " + titleStr, `Create a media room (Max 4 Viewers)`, "prompt_with_pass", ["Room Name", "Password (Optional)"]);
+            
             if (result && result.input.trim() !== '') {
                 let formatted = result.input.trim().toLowerCase(); if (!formatted.startsWith('#')) formatted = '#' + formatted;
                 let passIcon = ''; if (result.pass.trim() !== '') { roomPasswords[net + '_' + formatted] = result.pass.trim(); passIcon = ' <span title="Protected">🔒</span>'; }
                 
                 if (!networkRooms[net]) networkRooms[net] = [{ name: '# general', passIcon: '' }];
-                networkRooms[net].push({ name: formatted, passIcon: passIcon, mediaType: type });
-                syncRoomsToGuests(net); renderRoomList(net);
+                // Tag room with broadcaster ID
+                networkRooms[net].push({ name: formatted, passIcon: passIcon, mediaType: type, broadcasterId: userProfile.id });
                 
+                syncRoomsToGuests(net); renderRoomList(net);
                 const item = Array.from(document.querySelectorAll('.channel-item')).find(el => el.innerText.includes(formatted));
                 if(item) attemptJoinRoom(formatted, item, passIcon);
             }
@@ -607,7 +560,7 @@
         async function promptCreateRoom() {
             const net = userProfile.channel;
             if (!networkStates[net]?.isHost) { await showCustomModal("Denied", "Only the Host can create rooms!", "alert"); return; }
-            const result = await showCustomModal("New Room", "Create a new text room", "prompt_with_pass", ["Room Name", "Password (Optional)"]);
+            const result = await showCustomModal("New Room", "Create a new room", "prompt_with_pass", ["Room Name", "Password (Optional)"]);
             if (result && result.input.trim() !== '') {
                 let formatted = result.input.trim().toLowerCase(); if (!formatted.startsWith('#')) formatted = '#' + formatted;
                 let passIcon = ''; if (result.pass.trim() !== '') { roomPasswords[net + '_' + formatted] = result.pass.trim(); passIcon = ' <span title="Protected">🔒</span>'; }
@@ -623,7 +576,7 @@
             const net = userProfile.channel;
             let passAttempt = '';
             
-            // Check occupancy limit for media rooms FIRST
+            // Limit Media Rooms to 4 Occupants
             const roomObj = networkRooms[net]?.find(r => r.name === roomName);
             if (roomObj && roomObj.mediaType) {
                 const occupants = (networkStates[net]?.users || []).filter(u => u.currentRoom === roomName).length;
@@ -638,12 +591,15 @@
                 roomPasswords[net + '_' + roomName] = passAttempt;
             }
             
+            // Clean up any existing media before moving
+            if (currentRoom !== roomName) hangUpMedia(true);
+
             document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
             element.classList.add('active'); element.id = 'ui-channel-name';
-            currentRoom = roomName; userProfile.currentRoom = currentRoom; renderedMessageIds.clear();
+            currentRoom = roomName; userProfile.currentRoom = roomName; renderedMessageIds.clear();
             
-            // Notify network of move so occupancy updates immediately
-            broadcastToNetwork(net, { type: 'ROOM_CHANGE', user: userProfile.id, room: currentRoom });
+            // Notify network of move so Host tracks occupancy
+            broadcastToNetwork(net, { type: 'ROOM_CHANGE', user: { id: userProfile.id, peerId: p2pInstances[net]?.peer?.id }, room: currentRoom });
             
             if (networkStates[net] && !networkStates[net].isHost) requestHistoryFromHost(net, roomName, 10, 0, passAttempt);
             else loadHistoryForRoomUI();
@@ -651,90 +607,102 @@
             addSystemMessage(`Switched to room ${roomName}`, net);
             if(window.innerWidth <= 850) closeAllMobileMenus();
             
-            // Initialize Media if applicable
             initMediaForRoom(net, roomObj);
         }
 
-        // --- MEDIA STREAMING LOGIC ---
+        // --- BROADCASTER VS VIEWER LOGIC ---
         async function initMediaForRoom(net, roomObj) {
             const mediaContainer = document.getElementById('media-container');
+            const mediaFeed = document.getElementById('media-feed');
+            const voiceAvatar = document.getElementById('media-voice-avatar');
+            const expandBtn = document.getElementById('media-expand-btn');
+            const mediaTitle = document.getElementById('media-title');
             
-            // Cleanup existing
-            if (localMediaStream) { localMediaStream.getTracks().forEach(t => t.stop()); localMediaStream = null; }
-            Object.values(activePeerCalls).forEach(c => c.close());
-            activePeerCalls = {};
-            mediaContainer.innerHTML = '';
             mediaContainer.style.display = 'none';
+            mediaFeed.style.display = 'none';
+            voiceAvatar.style.display = 'none';
+            expandBtn.style.display = 'none';
 
             if (roomObj && roomObj.mediaType) {
                 mediaContainer.style.display = 'flex';
-                try {
-                    if (roomObj.mediaType === 'screen') {
-                        localMediaStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-                    } else {
-                        localMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-                    }
-                    
-                    addMediaElement('local', localMediaStream, true, roomObj.mediaType, userProfile.avatar);
-
-                    // Revert to general if stream is killed
-                    localMediaStream.getTracks()[0].onended = () => {
-                        const genRoom = document.querySelector('.channel-item');
-                        if(genRoom) genRoom.click();
-                    };
-
-                    // Call existing peers in this room
-                    const peersInRoom = networkStates[net].users.filter(u => u.currentRoom === currentRoom && u.id !== userProfile.id);
-                    peersInRoom.forEach(p => {
-                        if (p.peerId && p2pInstances[net]?.peer) {
-                            const call = p2pInstances[net].peer.call(p.peerId, localMediaStream, { metadata: { room: currentRoom, mediaType: roomObj.mediaType } });
-                            if(call) handleMediaCall(call, roomObj.mediaType, p.avatarUrl);
+                const isBroadcaster = roomObj.broadcasterId === userProfile.id;
+                
+                if (isBroadcaster) {
+                    mediaTitle.innerText = "Broadcasting " + (roomObj.mediaType === 'voice' ? "Voice" : "Screen");
+                    try {
+                        if (roomObj.mediaType === 'screen') {
+                            localMediaStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                            mediaFeed.srcObject = localMediaStream;
+                            mediaFeed.muted = true; // Don't hear self
+                            mediaFeed.style.display = 'block';
+                            expandBtn.style.display = 'block';
+                        } else {
+                            localMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                            voiceAvatar.style.backgroundImage = `url('${userProfile.avatar}')`;
+                            voiceAvatar.style.display = 'block';
                         }
-                    });
-                } catch (e) {
-                    addSystemMessage("Media access denied or cancelled.", net);
-                    const genRoom = document.querySelector('.channel-item');
-                    if(genRoom) genRoom.click();
+                        
+                        // If user hits 'Stop Sharing' on browser level
+                        localMediaStream.getTracks()[0].onended = () => hangUpMedia(false);
+
+                        // Call everyone currently in room
+                        const peersInRoom = networkStates[net].users.filter(u => u.currentRoom === currentRoom && u.id !== userProfile.id);
+                        peersInRoom.forEach(p => {
+                            if (p.peerId && p2pInstances[net]?.peer) {
+                                p2pInstances[net].peer.call(p.peerId, localMediaStream, { metadata: { room: currentRoom, mediaType: roomObj.mediaType } });
+                            }
+                        });
+                    } catch (e) {
+                        addSystemMessage("Media access denied. Returning to general.", net);
+                        hangUpMedia(false);
+                    }
+                } else {
+                    // Is Viewer
+                    const bUser = networkStates[net].users.find(u => u.id === roomObj.broadcasterId);
+                    mediaTitle.innerText = `Viewing ${bUser ? bUser.name : 'Host'}`;
+                    if (roomObj.mediaType === 'voice') {
+                        voiceAvatar.style.backgroundImage = `url('${bUser ? bUser.avatarUrl : 'https://api.dicebear.com/7.x/bottts/svg?seed=sys'}')`;
+                        voiceAvatar.style.display = 'block';
+                    } else {
+                        mediaFeed.style.display = 'block';
+                        expandBtn.style.display = 'block';
+                    }
+                    // Viewer passively waits for the WebRTC 'call' event
                 }
             }
         }
 
-        function handleMediaCall(call, type, avatarUrl = '') {
-            activePeerCalls[call.peer] = call;
-            call.on('stream', remoteStream => {
-                if (!document.getElementById('media-' + call.peer)) {
-                    addMediaElement(call.peer, remoteStream, false, type, avatarUrl);
-                }
-            });
-            call.on('close', () => {
-                const el = document.getElementById('media-' + call.peer);
-                if (el) el.remove();
-                delete activePeerCalls[call.peer];
-            });
-        }
-
-        function addMediaElement(id, stream, isLocal, type, avatarUrl) {
-            const container = document.getElementById('media-container');
-            const wrapper = document.createElement('div');
-            wrapper.id = 'media-' + id;
-            wrapper.className = 'media-wrapper' + (type === 'voice' ? ' voice-only' : '');
+        function hangUpMedia(isSilentTransition = false) {
+            const net = userProfile.channel;
+            const roomObj = networkRooms[net]?.find(r => r.name === currentRoom);
             
-            if (type === 'screen') {
-                const video = document.createElement('video');
-                video.srcObject = stream; video.autoplay = true; video.playsInline = true;
-                if (isLocal) video.muted = true;
-                wrapper.appendChild(video);
-            } else {
-                const audio = document.createElement('audio');
-                audio.srcObject = stream; audio.autoplay = true;
-                if (isLocal) audio.muted = true;
-                const avatar = document.createElement('div');
-                avatar.className = 'voice-avatar';
-                avatar.style.backgroundImage = `url('${avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=voice'}')`;
-                wrapper.appendChild(audio);
-                wrapper.appendChild(avatar);
+            if (localMediaStream) { localMediaStream.getTracks().forEach(t => t.stop()); localMediaStream = null; }
+            if (incomingMediaCall) { incomingMediaCall.close(); incomingMediaCall = null; }
+            
+            const mediaFeed = document.getElementById('media-feed');
+            mediaFeed.srcObject = null;
+            document.getElementById('media-container').style.display = 'none';
+
+            if (roomObj && roomObj.broadcasterId === userProfile.id && !isSilentTransition) {
+                // Broadcaster killed it. Delete room for everyone.
+                if (networkStates[net].isHost) deleteRoomAsHost(net, currentRoom);
+                else p2pInstances[net].hostConn.send({ type: 'DELETE_ROOM', room: currentRoom });
+            } 
+            
+            if (!isSilentTransition) {
+                const genRoom = document.querySelector('.channel-item');
+                if (genRoom) genRoom.click();
             }
-            container.appendChild(wrapper);
+        }
+
+        function deleteRoomAsHost(net, roomName) {
+            networkRooms[net] = networkRooms[net].filter(r => r.name !== roomName);
+            syncRoomsToGuests(net);
+            // Kick everyone in that room to # general
+            networkStates[net].users.forEach(u => { if (u.currentRoom === roomName) u.currentRoom = '# general'; });
+            broadcastToNetwork(net, { type: 'USER_LIST_SYNC', users: networkStates[net].users });
+            // Alert network to force switch
+            broadcastToNetwork(net, { type: 'FORCE_ROOM', oldRoom: roomName, newRoom: '# general' });
         }
 
         function renderRoomList(net) {
@@ -777,30 +745,7 @@
             switchServerView(userProfile.channel, document.querySelector('.server-icon.active'));
         }
 
-        function parseContent(text) {
-            const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-            const videoRegex = /(https?:\/\/.*\.(?:mp4|webm|ogg))/i;
-            const generalUrlRegex = /(https?:\/\/[^\s]+)/g;
-
-            return text.replace(generalUrlRegex, (url) => {
-                const ytMatch = url.match(youtubeRegex);
-                if (ytMatch) return `<div class="embed-container"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}" frameborder="0" allowfullscreen></iframe></div>`;
-                
-                const vidMatch = url.match(videoRegex);
-                if (vidMatch) return `<video controls class="msg-video"><source src="${vidMatch[1]}"></video>`;
-                
-                const previewId = 'preview-' + crypto.randomUUID();
-                setTimeout(() => fetchAndRenderPreview(url, previewId), 50);
-                
-                return `<div id="${previewId}">
-                            <a href="${url}" target="_blank" class="link-preview">
-                                <div class="link-preview-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></div>
-                                <span class="link-text">${url}</span>
-                            </a>
-                        </div>`;
-            });
-        }
-
+        // --- CONTENT PARSING & PREVIEWS ---
         function fetchAndRenderPreview(url, previewId) {
             fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`)
                 .then(res => res.ok ? res.json() : Promise.reject(res))
@@ -825,7 +770,31 @@
                             `;
                         }
                     }
-                }).catch(e => {});
+                }).catch(e => { });
+        }
+
+        function parseContent(text) {
+            const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+            const videoRegex = /(https?:\/\/.*\.(?:mp4|webm|ogg))/i;
+            const generalUrlRegex = /(https?:\/\/[^\s]+)/g;
+
+            return text.replace(generalUrlRegex, (url) => {
+                const ytMatch = url.match(youtubeRegex);
+                if (ytMatch) return `<div class="embed-container"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}" frameborder="0" allowfullscreen></iframe></div>`;
+                
+                const vidMatch = url.match(videoRegex);
+                if (vidMatch) return `<video controls class="msg-video"><source src="${vidMatch[1]}"></video>`;
+                
+                const previewId = 'preview-' + crypto.randomUUID();
+                setTimeout(() => fetchAndRenderPreview(url, previewId), 50);
+                
+                return `<div id="${previewId}">
+                            <a href="${url}" target="_blank" class="link-preview">
+                                <div class="link-preview-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></div>
+                                <span class="link-text">${url}</span>
+                            </a>
+                        </div>`;
+            });
         }
 
         function optimizeAndSendImage(base64) {
@@ -872,7 +841,6 @@
             }
         }
 
-        // --- TYPING SYNC ---
         function handleInput() { 
             broadcastToNetwork(userProfile.channel, { type: 'TYPING', room: currentRoom, name: userProfile.name, senderId: userProfile.id });
         }
@@ -881,7 +849,7 @@
             document.getElementById('typing-user').innerText = name + " is typing";
             ind.style.display = 'flex'; 
             clearTimeout(typingTimeout); 
-            typingTimeout = setTimeout(() => ind.style.display = 'none', 2000);
+            typingTimeout = setTimeout(() => ind.style.display = 'none', 1500);
         }
 
         function sendMessage() {
@@ -899,23 +867,18 @@
             if (msg.msgId) renderedMessageIds.add(msg.msgId);
             
             const box = document.getElementById('messages');
-            const div = document.createElement('div');
-            div.className = 'message';
+            const div = document.createElement('div'); div.className = 'message';
             
             let contentHtml = parseContent(msg.content);
-            if (msg.image) {
-                contentHtml += `<img src="${msg.image}" class="msg-image" onclick="openLightbox('${msg.image}')">`;
-            }
+            if (msg.image) contentHtml += `<img src="${msg.image}" class="msg-image" onclick="openLightbox('${msg.image}')">`;
             
             div.innerHTML = `<div class="msg-avatar" style="background-image:url('${msg.avatarUrl}')"></div><div class="msg-body"><span class="msg-author">${msg.author}</span><span class="msg-content">${contentHtml}</span></div>`;
-            box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
+            box.appendChild(div); box.scrollTop = box.scrollHeight;
             
             if (msg.senderId && msg.senderId !== userProfile.id && msg.author !== 'System') {
                 playNotifySound();
                 if (document.hidden) {
-                    unreadCount++;
-                    document.title = `(${unreadCount}) New Message! - Disband`;
+                    unreadCount++; document.title = `(${unreadCount}) New Message! - Disband`;
                     if (Notification.permission === "granted") {
                         let cleanText = msg.content.replace(/<[^>]*>?/gm, '');
                         if(msg.image) cleanText = '🖼️ Sent an image';
@@ -932,18 +895,13 @@
             if (net && net !== userProfile.channel) return;
             const msg = { msgId: null, author: 'System', avatarUrl: 'https://api.dicebear.com/7.x/shapes/svg?seed=sys', content: text, senderId: null };
             const div = renderMessage(msg);
-            if (div) {
-                div.classList.add('system-message');
-                setTimeout(() => { div.style.opacity = '0'; div.style.transform = 'translateY(-10px)'; setTimeout(() => div.remove(), 500); }, 6000);
-            }
+            if (div) { div.classList.add('system-message'); setTimeout(() => { div.style.opacity = '0'; div.style.transform = 'translateY(-10px)'; setTimeout(() => div.remove(), 500); }, 6000); }
         }
 
         function saveMessageToHistory(net, room, msg) { 
-            if (!chatHistory[net]) chatHistory[net] = {}; 
-            if (!chatHistory[net][room]) chatHistory[net][room] = []; 
+            if (!chatHistory[net]) chatHistory[net] = {}; if (!chatHistory[net][room]) chatHistory[net][room] = []; 
             if (!chatHistory[net][room].find(m => m.msgId === msg.msgId)) {
-                chatHistory[net][room].push(msg); 
-                localStorage.setItem('disband_history', JSON.stringify(chatHistory)); 
+                chatHistory[net][room].push(msg); localStorage.setItem('disband_history', JSON.stringify(chatHistory)); 
             }
         }
         
@@ -960,8 +918,7 @@
                  wrap.innerHTML = `<button class="clay-btn" style="padding: 10px 30px; font-size: 0.9rem;" onclick="loadMoreMessages()">Load Earlier Messages</button>`;
                  box.appendChild(wrap);
             }
-            toLoad.forEach(m => renderMessage(m));
-            box.scrollTop = box.scrollHeight;
+            toLoad.forEach(m => renderMessage(m)); box.scrollTop = box.scrollHeight;
         }
 
         function loadMoreMessages() {
@@ -983,7 +940,6 @@
             document.getElementById('create-room-btn').style.display = networkStates[net].isHost ? 'flex' : 'none';
         }
 
-        // --- DISCONNECT / HEARTBEAT HANDLER ---
         function handlePeerDisconnect(net, peerId) {
             const deadId = peerIdToProfileId[peerId];
             if (deadId) {
@@ -994,9 +950,7 @@
                 renderUserList(net);
                 broadcastToNetwork(net, { type: 'USER_LIST_SYNC', users: networkStates[net].users });
             }
-            if (p2pInstances[net]) {
-                p2pInstances[net].connections = p2pInstances[net].connections.filter(c => c.peer !== peerId);
-            }
+            if (p2pInstances[net]) p2pInstances[net].connections = p2pInstances[net].connections.filter(c => c.peer !== peerId);
         }
 
         // --- WEBRTC NETWORKING ---
@@ -1006,17 +960,16 @@
             const hostId = 'disband-net-' + net.replace(/[^a-zA-Z0-9]/g, '');
             const peer = new Peer(PEER_CONFIG); let resolved = false;
             
-            // Setup Media Listening
+            // Viewer answering incoming Media Call
             peer.on('call', call => {
                 const room = call.metadata?.room;
-                const mType = call.metadata?.mediaType;
                 if (room === currentRoom) {
-                    call.answer(localMediaStream); 
-                    const callerUser = networkStates[net]?.users.find(u => u.peerId === call.peer);
-                    handleMediaCall(call, mType, callerUser?.avatarUrl);
-                } else {
-                    call.close();
-                }
+                    call.answer(); // passive view
+                    incomingMediaCall = call;
+                    call.on('stream', remoteStream => {
+                        document.getElementById('media-feed').srcObject = remoteStream;
+                    });
+                } else call.close();
             });
 
             peer.on('open', () => {
@@ -1028,7 +981,7 @@
 
         function syncRoomsToGuests(net) {
             if(!p2pInstances[net]?.isHost) return;
-            const rooms = networkRooms[net].map(r => ({ name: r.name, hasPassword: !!roomPasswords[net + '_' + r.name], mediaType: r.mediaType }));
+            const rooms = networkRooms[net].map(r => ({ name: r.name, hasPassword: !!roomPasswords[net + '_' + r.name], mediaType: r.mediaType, broadcasterId: r.broadcasterId }));
             broadcastToNetwork(net, { type: 'ROOM_LIST_SYNC', rooms });
         }
 
@@ -1036,11 +989,14 @@
             const hostPeer = new Peer(hostId, PEER_CONFIG);
             p2pInstances[net] = { peer: hostPeer, isHost: true, connections: [] };
             
+            // Host acting as Viewer
             hostPeer.on('call', call => {
                 if (call.metadata?.room === currentRoom) {
-                    call.answer(localMediaStream); 
-                    const callerUser = networkStates[net]?.users.find(u => u.peerId === call.peer);
-                    handleMediaCall(call, call.metadata?.mediaType, callerUser?.avatarUrl);
+                    call.answer(); 
+                    incomingMediaCall = call;
+                    call.on('stream', remoteStream => {
+                        document.getElementById('media-feed').srcObject = remoteStream;
+                    });
                 } else call.close();
             });
 
@@ -1054,40 +1010,36 @@
                     if (!p2pInstances[net]?.isHost) return;
                     const now = Date.now();
                     p2pInstances[net].connections.forEach(conn => {
-                        if (conn.lastPong && now - conn.lastPong > 12000) { conn.close(); handlePeerDisconnect(net, conn.peer); }
+                        if (conn.lastPong && now - conn.lastPong > 10000) { conn.close(); handlePeerDisconnect(net, conn.peer); }
                         else { conn.send({ type: 'PING' }); }
                     });
-                }, 5000);
+                }, 4000);
             });
 
             hostPeer.on('connection', (conn) => {
-                conn.peerConnection?.addEventListener('iceconnectionstatechange', () => {
-                    if (['disconnected', 'failed', 'closed'].includes(conn.peerConnection.iceConnectionState)) handlePeerDisconnect(net, conn.peer);
-                });
-
                 conn.on('data', (data) => {
                     if (data.type === 'PONG') { conn.lastPong = Date.now(); return; }
                     if (data.type === 'AUTH') {
                         if (roomPasswords[net] && data.pass !== roomPasswords[net]) { conn.send({ type: 'AUTH_FAILED' }); setTimeout(() => conn.close(), 500); return; }
-                        conn.lastPong = Date.now();
-                        p2pInstances[net].connections.push(conn);
-                        peerIdToProfileId[conn.peer] = data.user.id;
-                        data.user.peerId = conn.peer;
+                        conn.lastPong = Date.now(); p2pInstances[net].connections.push(conn);
+                        peerIdToProfileId[conn.peer] = data.user.id; data.user.peerId = conn.peer;
                         if (!networkStates[net].users.find(u => u.id === data.user.id)) { networkStates[net].users.push(data.user); addSystemMessage(`${data.user.name} joined.`, net); }
-                        renderUserList(net);
-                        broadcastToNetwork(net, { type: 'USER_LIST_SYNC', users: networkStates[net].users }); 
-                        syncRoomsToGuests(net);
+                        renderUserList(net); broadcastToNetwork(net, { type: 'USER_LIST_SYNC', users: networkStates[net].users }); syncRoomsToGuests(net);
                         setTimeout(() => {
                             const msgs = chatHistory[net]?.['# general'] || [];
                             conn.send({ type: 'HISTORY_SYNC', room: '# general', messages: msgs.slice(-15), offset: 0, total: msgs.length });
-                            setTimeout(() => { broadcastToNetwork(net, { type: 'AVATAR_BATCH_SYNC', avatars: networkStates[net].users.map(u => ({ id: u.id, url: u.avatarUrl })) }); }, 1000);
                         }, 500);
                     }
                     if (data.type === 'ROOM_CHANGE') {
-                        const u = networkStates[net].users.find(u => u.id === data.user);
+                        const u = networkStates[net].users.find(u => u.id === data.user.id);
                         if (u) u.currentRoom = data.room;
                         broadcastToNetwork(net, { type: 'USER_LIST_SYNC', users: networkStates[net].users });
+                        broadcastToNetwork(net, data); // Forward to Broadcasters
                         return;
+                    }
+                    if (data.type === 'DELETE_ROOM') {
+                        const r = networkRooms[net].find(room => room.name === data.room);
+                        if (r && (r.broadcasterId === data.user || networkStates[net].isHost)) deleteRoomAsHost(net, data.room);
                     }
                     if (data.type === 'HISTORY_REQUEST') {
                         const msgs = chatHistory[net]?.[data.room] || []; const end = msgs.length - data.offset;
@@ -1118,13 +1070,24 @@
                 if (data.type === 'PING') { hostConn.send({ type: 'PONG' }); return; }
                 if (data.type === 'AUTH_FAILED') { addSystemMessage("Invalid Password.", net); hostConn.close(); }
                 if (data.type === 'USER_LIST_SYNC') { networkStates[net].users = data.users; renderUserList(net); }
-                if (data.type === 'AVATAR_BATCH_SYNC') {
-                    data.avatars.forEach(av => {
-                        const user = networkStates[net].users.find(u => u.id === av.id);
-                        if (user) { user.avatarUrl = av.url; const el = document.getElementById(`avatar-${net}-${av.id}`); if (el) el.style.backgroundImage = `url(${av.url})`; }
-                    });
+                if (data.type === 'ROOM_LIST_SYNC') { networkRooms[net] = data.rooms.map(r => ({ name: r.name, passIcon: r.hasPassword ? ' <span title="Protected">🔒</span>' : '', mediaType: r.mediaType, broadcasterId: r.broadcasterId })); renderRoomList(net); }
+                
+                if (data.type === 'ROOM_CHANGE') {
+                    // If I am the Broadcaster and someone just joined my room
+                    const myRoom = networkRooms[net]?.find(r => r.name === currentRoom && r.broadcasterId === userProfile.id);
+                    if (myRoom && data.room === currentRoom && data.user.id !== userProfile.id) {
+                        if (data.user.peerId && localMediaStream) {
+                            p2pInstances[net].peer.call(data.user.peerId, localMediaStream, { metadata: { room: currentRoom, mediaType: myRoom.mediaType } });
+                        }
+                    }
                 }
-                if (data.type === 'ROOM_LIST_SYNC') { networkRooms[net] = data.rooms.map(r => ({ name: r.name, passIcon: r.hasPassword ? ' <span title="Protected">🔒</span>' : '', mediaType: r.mediaType })); renderRoomList(net); }
+                if (data.type === 'FORCE_ROOM') {
+                    if (currentRoom === data.oldRoom) {
+                        addSystemMessage("Room closed by broadcaster.", net);
+                        const genRoom = document.querySelector('.channel-item');
+                        if (genRoom) genRoom.click();
+                    }
+                }
                 if (data.type === 'HISTORY_SYNC') {
                     if (!chatHistory[net]) chatHistory[net] = {}; if (!chatHistory[net][data.room]) chatHistory[net][data.room] = [];
                     const existingIds = new Set(chatHistory[net][data.room].map(m => m.msgId));
@@ -1148,15 +1111,10 @@
             });
             hostConn.on('close', () => {
                 addSystemMessage("Host connection lost. Calculating succession...", net);
-                
-                // Deterministic Succession Logic
                 const survivingUsers = (networkStates[net]?.users || []).filter(u => !u.isRoomHost);
                 const myRank = survivingUsers.findIndex(u => u.id === userProfile.id);
-                
                 if (p2pInstances[net]) { p2pInstances[net].peer.destroy(); delete p2pInstances[net]; }
                 delete networkStates[net]; 
-                
-                // Oldest guest waits 0s. Second waits 2s.
                 const waitTime = myRank >= 0 ? myRank * 2000 : 5000;
                 setTimeout(() => initP2PNetwork(net), waitTime);
             });
