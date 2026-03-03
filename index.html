@@ -36,6 +36,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Nunito', sans-serif; }
         body { height: 100vh; background-color: var(--bg-color); color: var(--text-main); overflow: hidden; display: flex; align-items: center; justify-content: center; transition: background-color 0.3s ease, color 0.3s ease; }
 
+        /* Custom Bouncy Scrollbars */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 20px; border: 2px solid var(--bg-color); }
@@ -97,20 +98,20 @@
         .clay-btn:hover { transform: scale(1.02); }
         .clay-btn:active { box-shadow: var(--clay-button-active); transform: scale(0.95); }
 
-        #main-app { display: none; width: 100%; height: 100%; overflow: hidden; }
+        #main-app { display: none; width: 100%; height: 100%; overflow: hidden; position: relative; }
         #servers { width: 80px; padding: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 15px; flex-shrink: 0; }
         .server-icon { width: 50px; height: 50px; border-radius: 50%; background-color: var(--bg-color); box-shadow: var(--clay-outer); cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; color: var(--accent); flex-shrink: 0; }
         .server-icon:hover { border-radius: 15px; box-shadow: var(--clay-inner); transform: scale(1.1); }
         .server-icon.active { box-shadow: var(--clay-inner); color: var(--text-main); }
 
         #channels { width: 250px; padding: 20px; display: flex; flex-direction: column; gap: 15px; box-shadow: var(--clay-outer); border-radius: 30px; margin: 15px 0 15px 10px; transition: all 0.3s ease; flex-shrink: 0; overflow: hidden; }
-        #channels.hidden { width: 0; margin: 0; padding: 0; opacity: 0; border: none; }
+        #channels.hidden { width: 0; margin: 0; padding: 0; opacity: 0; border: none; pointer-events: none; }
         
         .channel-header { font-weight: 800; color: var(--text-main); font-size: 1.2rem; padding-bottom: 15px; border-bottom: 2px solid rgba(163, 177, 198, 0.2); display: flex; justify-content: space-between; align-items: center; }
         .channel-item { padding: 12px 15px; border-radius: 12px; cursor: pointer; color: var(--text-muted); font-weight: 700; transition: 0.2s; display: flex; justify-content: space-between; }
         .channel-item:hover, .channel-item.active { box-shadow: var(--clay-inner); color: var(--text-main); }
 
-        #chat-area { flex-grow: 1; display: flex; flex-direction: column; padding: 15px; gap: 15px; min-width: 0; }
+        #chat-area { flex-grow: 1; display: flex; flex-direction: column; padding: 15px; gap: 15px; min-width: 0; position: relative; }
         #messages { flex-grow: 1; padding: 20px; border-radius: 30px; box-shadow: var(--clay-inner); overflow-y: auto; display: flex; flex-direction: column; gap: 30px; }
         
         @keyframes popInBounce { 0% { opacity: 0; transform: scale(0.5) translateX(-40px); } 60% { opacity: 1; transform: scale(1.05) translateX(10px); } 80% { transform: scale(0.98) translateX(-5px); } 100% { opacity: 1; transform: scale(1) translateX(0); } }
@@ -126,6 +127,10 @@
         .msg-image:hover { transform: scale(1.01); }
         .msg-video { width: 100%; max-width: 500px; border-radius: 20px; box-shadow: var(--clay-outer); margin-top: 10px; background: #000; }
         .embed-container { margin-top: 10px; border-radius: 20px; overflow: hidden; box-shadow: var(--clay-outer); width: 100%; max-width: 500px; aspect-ratio: 16/9; }
+        .link-preview { margin-top: 10px; padding: 15px; border-radius: 15px; box-shadow: var(--clay-inner); background: rgba(255,255,255,0.05); display: flex; align-items: center; gap: 10px; text-decoration: none; transition: 0.2s; }
+        .link-preview:hover { transform: translateY(-2px); box-shadow: var(--clay-outer); }
+        .link-preview-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; }
+        .link-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--accent); font-weight: 700; font-size: 0.9rem; }
 
         .typing-indicator { font-size: 0.9rem; color: var(--text-muted); padding: 0 5px 10px 15px; font-style: italic; display: none; height: 20px; font-weight: 700; }
         .typing-dots::after { content: '.'; animation: typingDots 1.5s steps(4, end) infinite; }
@@ -135,8 +140,8 @@
         #message-input { flex-grow: 1; padding: 18px 25px; font-size: 1.1rem; border-radius: 20px; }
         .input-actions { display: flex; gap: 10px; }
 
-        #users { width: 250px; padding: 20px; display: flex; flex-direction: column; gap: 15px; box-shadow: var(--clay-outer); border-radius: 30px; margin: 15px 15px 15px 0; transition: all 0.3s ease; flex-shrink: 0; }
-        #users.hidden { width: 0; margin: 0; padding: 0; opacity: 0; border: none; }
+        #users { width: 250px; padding: 20px; display: flex; flex-direction: column; gap: 15px; box-shadow: var(--clay-outer); border-radius: 30px; margin: 15px 15px 15px 0; transition: all 0.3s ease; flex-shrink: 0; overflow: hidden; }
+        #users.hidden { width: 0; margin: 0; padding: 0; opacity: 0; border: none; pointer-events: none; }
         .user-category { font-size: 0.9rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; }
         .user-item { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 15px; box-shadow: var(--clay-outer); transition: 0.2s; }
         .user-avatar { width: 35px; height: 35px; border-radius: 50%; box-shadow: var(--clay-inner); background-size: cover; background-position: center; flex-shrink: 0; }
@@ -146,20 +151,23 @@
         .status-dot { width: 10px; height: 10px; background-color: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); animation: pulseStatus 2s infinite; }
         @keyframes pulseStatus { 0% { transform: scale(0.9); opacity: 0.7; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(0.9); opacity: 0.7; } }
 
+        @media (max-width: 1000px) {
+            #users { position: fixed; right: -300px; height: calc(100% - 30px); top: 15px; z-index: 500; background: var(--bg-color); box-shadow: var(--clay-outer); }
+            #users.active { right: 15px; width: 250px; margin: 0; opacity: 1; }
+            #mobile-users-toggle { display: flex !important; }
+        }
+
         @media (max-width: 850px) {
-            #channels, #users { position: fixed; z-index: 500; height: calc(100% - 30px); top: 15px; background: var(--bg-color); box-shadow: var(--clay-outer); }
-            #channels { left: -300px; width: 250px; }
-            #users { right: -300px; width: 250px; }
-            #channels.active { left: 80px; }
-            #users.active { right: 15px; }
-            .mobile-toggle { display: flex !important; }
+            #channels { position: fixed; left: -300px; height: calc(100% - 30px); top: 15px; z-index: 500; background: var(--bg-color); box-shadow: var(--clay-outer); }
+            #channels.active { left: 80px; width: 250px; margin: 0; opacity: 1; }
+            #mobile-rooms-toggle { display: flex !important; }
         }
         
         .mobile-toggle { position: absolute; top: 15px; padding: 10px; z-index: 1000; display: none; }
         #mobile-users-toggle { right: 15px; }
         #mobile-rooms-toggle { left: 85px; }
 
-        #disband-logo { margin-bottom: 10px; transition: transform 0.4s; color: var(--accent); }
+        #disband-logo { margin-bottom: 10px; transition: transform 0.4s; color: var(--accent); fill: currentColor; }
         #disband-logo:hover { transform: rotate(10deg) scale(1.05); }
 
     </style>
@@ -279,6 +287,7 @@
         let currentLoadedCount = 10;
         let p2pInstances = {}; 
         let renderedMessageIds = new Set();
+        let peerIdToProfileId = {}; // Host-only: Maps WebRTC peer IDs to our profile IDs for cleanup
 
         function toggleInfoPanel() { document.getElementById('info-panel').classList.toggle('open'); }
         function toggleMobileMenu(id) { 
@@ -441,13 +450,20 @@
             switchServerView(userProfile.channel, document.querySelector('.server-icon.active'));
         }
 
-        // --- CONTENT PARSING (IMAGES, VIDEO, YOUTUBE) ---
+        // --- CONTENT PARSING (IMAGES, VIDEO, YOUTUBE, CLICKABLE LINKS) ---
         function parseContent(text) {
             const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
             const imageRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp))/i;
             const videoRegex = /(https?:\/\/.*\.(?:mp4|webm|ogg))/i;
+            const generalUrlRegex = /(https?:\/\/[^\s]+)/g;
 
-            let html = text;
+            let html = text.replace(generalUrlRegex, (url) => {
+                return `<a href="${url}" target="_blank" class="link-preview">
+                            <div class="link-preview-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></div>
+                            <span class="link-text">${url}</span>
+                        </a>`;
+            });
+
             const ytMatch = text.match(youtubeRegex);
             if (ytMatch) html += `<div class="embed-container"><iframe width="100%" height="100%" src="https://www.youtube.com/embed/${ytMatch[1]}" frameborder="0" allowfullscreen></iframe></div>`;
             
@@ -499,7 +515,25 @@
             ind.style.display = 'block'; clearTimeout(typingTimeout); typingTimeout = setTimeout(() => ind.style.display = 'none', 1500);
         }
 
-        // --- PASTE SUPPORT FOR IMAGES ---
+        // --- IMAGE OPTIMIZATION (Fixes freezes by compressing before send) ---
+        function optimizeAndSendImage(base64) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const maxDim = 800; // Limit image dimensions
+                if (width > height && width > maxDim) { height *= maxDim / width; width = maxDim; }
+                else if (height > maxDim) { width *= maxDim / height; height = maxDim; }
+                canvas.width = width; canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                const optimized = canvas.toDataURL('image/jpeg', 0.6); // Compress to 60% quality jpeg
+                sendImage(optimized);
+            };
+            img.src = base64;
+        }
+
         window.addEventListener('paste', e => {
             if (!isMainAppOpen) return;
             const items = (e.clipboardData || e.originalEvent.clipboardData).items;
@@ -507,7 +541,7 @@
                 if (item.type.indexOf("image") === 0) {
                     const blob = item.getAsFile();
                     const reader = new FileReader();
-                    reader.onload = event => sendImage(event.target.result);
+                    reader.onload = event => optimizeAndSendImage(event.target.result);
                     reader.readAsDataURL(blob);
                 }
             }
@@ -517,7 +551,7 @@
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = event => sendImage(event.target.result);
+                reader.onload = event => optimizeAndSendImage(event.target.result);
                 reader.readAsDataURL(file);
             }
         }
@@ -547,7 +581,6 @@
             const div = document.createElement('div'); div.className = 'message';
             let mediaHtml = '';
             if (media && media.type === 'image') mediaHtml = `<img src="${media.data}" class="msg-image" onclick="window.open(this.src)">`;
-            
             div.innerHTML = `<div class="msg-avatar" style="background-image: url('${avatarUrl}')"></div><div class="msg-body"><span class="msg-author">${author}</span><span class="msg-content">${parseContent(content)}</span>${mediaHtml}</div>`;
             const box = document.getElementById('messages'); box.appendChild(div); box.scrollTop = box.scrollHeight; return div;
         }
@@ -574,7 +607,7 @@
 
         function initP2PNetwork(net) {
             if (networkStates[net]) { if (net === userProfile.channel) renderUserList(net); return; }
-            addSystemMessage(`Connecting to ${net}...`, net);
+            addSystemMessage(`Disbanding into ${net}...`, net);
             const hostId = 'disband-net-' + net.replace(/[^a-zA-Z0-9]/g, '');
             const peer = new Peer(); let resolved = false;
             peer.on('open', () => {
@@ -603,18 +636,15 @@
                     if (data.type === 'AUTH') {
                         if (roomPasswords[net] && data.pass !== roomPasswords[net]) { conn.send({ type: 'AUTH_FAILED' }); setTimeout(() => conn.close(), 500); return; }
                         p2pInstances[net].connections.push(conn);
-                        if (!networkStates[net].users.find(u => u.id === data.user.id)) { 
-                            networkStates[net].users.push(data.user); 
-                            addSystemMessage(`${data.user.name} joined.`, net); 
-                        }
-                        // Host updates their own list immediately
+                        peerIdToProfileId[conn.peer] = data.user.id; // Map WebRTC ID to our Profile ID
+                        if (!networkStates[net].users.find(u => u.id === data.user.id)) { networkStates[net].users.push(data.user); addSystemMessage(`${data.user.name} joined.`, net); }
                         renderUserList(net);
-                        // Broadcast updated user list to everyone
-                        broadcastToNetwork(net, { type: 'USER_LIST_SYNC', users: networkStates[net].users.map(u => ({...u, avatarUrl: u.avatarUrl})) }); 
+                        broadcastToNetwork(net, { type: 'USER_LIST_SYNC', users: networkStates[net].users }); 
                         syncRoomsToGuests(net);
                         setTimeout(() => {
                             const msgs = chatHistory[net]?.['# general'] || [];
                             conn.send({ type: 'HISTORY_SYNC', room: '# general', messages: msgs.slice(-10), offset: 0, total: msgs.length });
+                            setTimeout(() => { broadcastToNetwork(net, { type: 'AVATAR_BATCH_SYNC', avatars: networkStates[net].users.map(u => ({ id: u.id, url: u.avatarUrl })) }); }, 1000);
                         }, 500);
                     }
                     if (data.type === 'HISTORY_REQUEST') {
@@ -627,7 +657,18 @@
                         p2pInstances[net].connections.forEach(c => { if (c.peer !== conn.peer) c.send(data); });
                     }
                 });
-                conn.on('close', () => { p2pInstances[net].connections = p2pInstances[net].connections.filter(c => c.peer !== conn.peer); });
+                conn.on('close', () => {
+                    const deadId = peerIdToProfileId[conn.peer];
+                    if (deadId) {
+                        const deadUser = networkStates[net].users.find(u => u.id === deadId);
+                        if (deadUser) addSystemMessage(`${deadUser.name} left.`, net);
+                        networkStates[net].users = networkStates[net].users.filter(u => u.id !== deadId);
+                        delete peerIdToProfileId[conn.peer];
+                        renderUserList(net);
+                        broadcastToNetwork(net, { type: 'USER_LIST_SYNC', users: networkStates[net].users });
+                    }
+                    p2pInstances[net].connections = p2pInstances[net].connections.filter(c => c.peer !== conn.peer);
+                });
             });
         }
 
@@ -639,6 +680,12 @@
             hostConn.on('data', (data) => {
                 if (data.type === 'AUTH_FAILED') { addSystemMessage("Invalid Password.", net); hostConn.close(); }
                 if (data.type === 'USER_LIST_SYNC') { networkStates[net].users = data.users; renderUserList(net); }
+                if (data.type === 'AVATAR_BATCH_SYNC') {
+                    data.avatars.forEach(av => {
+                        const user = networkStates[net].users.find(u => u.id === av.id);
+                        if (user) { user.avatarUrl = av.url; const el = document.getElementById(`avatar-${net}-${av.id}`); if (el) el.style.backgroundImage = `url(${av.url})`; }
+                    });
+                }
                 if (data.type === 'ROOM_LIST_SYNC') { networkRooms[net] = data.rooms.map(r => ({ name: r.name, passIcon: r.hasPassword ? ' <span title="Protected">🔒</span>' : '' })); renderRoomList(net); }
                 if (data.type === 'HISTORY_SYNC') {
                     if (!chatHistory[net]) chatHistory[net] = {}; if (!chatHistory[net][data.room]) chatHistory[net][data.room] = [];
