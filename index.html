@@ -1,1 +1,690 @@
-test
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disband - P2P Chat</title>
+    <!-- Custom Favicon (SVG Logo) -->
+    <link id="favicon" rel="icon" type="image/svg+xml" href="">
+    <!-- Import PeerJS for Serverless WebRTC Signaling -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+        :root {
+            --bg-color: #e0e5ec;
+            --text-main: #4a5568;
+            --text-muted: #a0aec0;
+            --accent: #5a7b82; 
+            --clay-outer: 9px 9px 16px rgb(163, 177, 198, 0.6), -9px -9px 16px rgba(255, 255, 255, 0.6);
+            --clay-inner: inset 6px 6px 10px 0 rgba(163, 177, 198, 0.5), inset -6px -6px 10px 0 rgba(255, 255, 255, 0.8);
+            --clay-button: 5px 5px 10px rgb(163, 177, 198, 0.6), -5px -5px 10px rgba(255, 255, 255, 0.6);
+            --clay-button-active: inset 4px 4px 8px rgba(163, 177, 198, 0.6), inset -4px -4px 8px rgba(255, 255, 255, 0.8);
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1b26;
+            --text-main: #c0caf5;
+            --text-muted: #565f89;
+            --accent: #276966; 
+            --clay-outer: 9px 9px 16px rgba(0, 0, 0, 0.4), -9px -9px 16px rgba(40, 40, 60, 0.3);
+            --clay-inner: inset 6px 6px 10px 0 rgba(0, 0, 0, 0.4), inset -6px -6px 10px 0 rgba(40, 40, 60, 0.3);
+            --clay-button: 5px 5px 10px rgba(0, 0, 0, 0.4), -5px -5px 10px rgba(40, 40, 60, 0.3);
+            --clay-button-active: inset 4px 4px 8px rgba(0, 0, 0, 0.4), inset -4px -4px 8px rgba(40, 40, 60, 0.3);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Nunito', sans-serif; }
+        body { height: 100vh; background-color: var(--bg-color); color: var(--text-main); overflow: hidden; display: flex; align-items: center; justify-content: center; transition: background-color 0.3s ease, color 0.3s ease; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 20px; border: 2px solid var(--bg-color); }
+
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; transition: opacity 0.5s ease; }
+
+        #splash-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 1000; transition: opacity 0.5s ease;
+        }
+        .spinner { width: 60px; height: 60px; border-radius: 50%; box-shadow: var(--clay-outer); position: relative; animation: pulse 2s infinite ease-in-out; }
+        .spinner::after { content: ''; position: absolute; top: 15px; left: 15px; right: 15px; bottom: 15px; background-color: var(--accent); border-radius: 50%; box-shadow: var(--clay-inner); }
+        .splash-text { margin-top: 30px; font-weight: 800; font-size: 1.4rem; color: var(--accent); letter-spacing: 2px; }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); box-shadow: var(--clay-outer); }
+            50% { transform: scale(1.1); box-shadow: 15px 15px 20px rgb(163, 177, 198, 0.4), -15px -15px 20px rgba(255, 255, 255, 0.4); }
+            100% { transform: scale(0.9); box-shadow: var(--clay-outer); }
+        }
+
+        #onboarding {
+            display: none; width: 90%; max-width: 350px; padding: 50px 40px 40px; border-radius: 35px; background-color: var(--bg-color); box-shadow: var(--clay-outer);
+            flex-direction: column; gap: 20px; z-index: 500; text-align: center; position: relative; animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        #info-panel {
+            position: fixed; top: 0; right: -400px; width: 350px; height: 100%; background-color: var(--bg-color);
+            box-shadow: var(--clay-outer); z-index: 1500; padding: 60px 30px; transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; flex-direction: column; gap: 20px;
+        }
+        #info-panel.open { right: 0; }
+        .info-close { position: absolute; top: 20px; right: 20px; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); }
+        .info-title { font-size: 1.8rem; font-weight: 800; color: var(--accent); }
+        .info-text { font-size: 1.1rem; line-height: 1.6; color: var(--text-main); font-weight: 600; }
+
+        @keyframes bounceIn { 0% { opacity: 0; transform: scale(0.8) translateY(20px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+
+        #custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 2000; opacity: 0; transition: opacity 0.3s ease; }
+        #custom-modal { width: 90%; max-width: 380px; padding: 40px; border-radius: 35px; background-color: var(--bg-color); box-shadow: var(--clay-outer); display: flex; flex-direction: column; gap: 15px; text-align: center; transform: scale(0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        .clay-icon-btn { width: 45px; height: 45px; border-radius: 50%; border: none; background-color: var(--bg-color); color: var(--text-main); box-shadow: var(--clay-outer); cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; justify-content: center; }
+        .clay-icon-btn:hover { border-radius: 15px; box-shadow: var(--clay-inner); transform: scale(1.1); }
+        .clay-icon-btn:active { box-shadow: var(--clay-button-active); transform: scale(0.95); }
+
+        .theme-toggle-btn { position: absolute; top: 15px; left: 15px; }
+        .info-toggle-btn { position: absolute; top: 15px; right: 15px; font-weight: 800; font-size: 1.2rem; }
+        .onboarding-title { font-size: 1.6rem; font-weight: 800; color: var(--accent); }
+        
+        .avatar-upload-circle { width: 90px; height: 90px; border-radius: 50%; margin: 0 auto; background-color: var(--bg-color); box-shadow: var(--clay-button); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); background-size: cover; background-position: center; color: var(--text-muted); font-size: 2rem; font-weight: bold; }
+        .avatar-upload-circle:hover { box-shadow: var(--clay-outer); transform: scale(1.05); color: var(--accent); }
+        .avatar-upload-circle:active { box-shadow: var(--clay-inner); transform: scale(0.95); }
+
+        .clay-input { width: 100%; padding: 15px; border: none; border-radius: 15px; background-color: var(--bg-color); box-shadow: var(--clay-inner); color: var(--text-main); outline: none; font-size: 1rem; transition: 0.2s; font-weight: 600; }
+        .clay-input:focus { box-shadow: var(--clay-outer); }
+        #setup-name, #setup-channel { text-align: center; }
+        
+        .clay-btn { padding: 15px; border: none; border-radius: 15px; background-color: var(--accent); color: white; font-weight: 800; font-size: 1.1rem; cursor: pointer; box-shadow: var(--clay-button); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .clay-btn:hover { transform: scale(1.02); }
+        .clay-btn:active { box-shadow: var(--clay-button-active); transform: scale(0.95); }
+
+        #main-app { display: none; width: 100%; height: 100%; overflow: hidden; }
+        #servers { width: 80px; padding: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 15px; flex-shrink: 0; }
+        .server-icon { width: 50px; height: 50px; border-radius: 50%; background-color: var(--bg-color); box-shadow: var(--clay-outer); cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; color: var(--accent); flex-shrink: 0; }
+        .server-icon:hover { border-radius: 15px; box-shadow: var(--clay-inner); transform: scale(1.1); }
+        .server-icon.active { box-shadow: var(--clay-inner); color: var(--text-main); }
+
+        #channels { width: 250px; padding: 20px; display: flex; flex-direction: column; gap: 15px; box-shadow: var(--clay-outer); border-radius: 30px; margin: 15px 0 15px 10px; transition: all 0.3s ease; flex-shrink: 0; overflow: hidden; }
+        #channels.hidden { width: 0; margin: 0; padding: 0; opacity: 0; border: none; }
+        
+        .channel-header { font-weight: 800; color: var(--text-main); font-size: 1.2rem; padding-bottom: 15px; border-bottom: 2px solid rgba(163, 177, 198, 0.2); display: flex; justify-content: space-between; align-items: center; }
+        .channel-item { padding: 12px 15px; border-radius: 12px; cursor: pointer; color: var(--text-muted); font-weight: 700; transition: 0.2s; display: flex; justify-content: space-between; }
+        .channel-item:hover, .channel-item.active { box-shadow: var(--clay-inner); color: var(--text-main); }
+
+        #chat-area { flex-grow: 1; display: flex; flex-direction: column; padding: 15px; gap: 15px; min-width: 0; }
+        #messages { flex-grow: 1; padding: 20px; border-radius: 30px; box-shadow: var(--clay-inner); overflow-y: auto; display: flex; flex-direction: column; gap: 30px; }
+        
+        @keyframes popInBounce { 0% { opacity: 0; transform: scale(0.5) translateX(-40px); } 60% { opacity: 1; transform: scale(1.05) translateX(10px); } 80% { transform: scale(0.98) translateX(-5px); } 100% { opacity: 1; transform: scale(1) translateX(0); } }
+        .message { display: flex; gap: 20px; animation: popInBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; transform-origin: left center; }
+        .msg-avatar { width: 40px; height: 40px; border-radius: 50%; box-shadow: var(--clay-outer); background-size: cover; background-position: center; flex-shrink: 0; }
+        .msg-body { display: flex; flex-direction: column; gap: 5px; justify-content: center; min-width: 0; }
+        .msg-author { font-weight: 800; color: var(--text-main); font-size: clamp(1.05rem, 1.8vw, 1.5rem); }
+        .msg-content { color: var(--text-muted); line-height: 1.5; font-weight: 600; font-size: clamp(0.95rem, 1.5vw, 1.25rem); word-break: break-word; }
+        .system-message { transition: opacity 0.5s ease, transform 0.5s ease; }
+
+        /* Rich Media Containers */
+        .msg-image { max-width: 100%; border-radius: 20px; box-shadow: var(--clay-outer); margin-top: 10px; cursor: pointer; transition: transform 0.2s; }
+        .msg-image:hover { transform: scale(1.01); }
+        .msg-video { width: 100%; max-width: 500px; border-radius: 20px; box-shadow: var(--clay-outer); margin-top: 10px; background: #000; }
+        .embed-container { margin-top: 10px; border-radius: 20px; overflow: hidden; box-shadow: var(--clay-outer); width: 100%; max-width: 500px; aspect-ratio: 16/9; }
+
+        .typing-indicator { font-size: 0.9rem; color: var(--text-muted); padding: 0 5px 10px 15px; font-style: italic; display: none; height: 20px; font-weight: 700; }
+        .typing-dots::after { content: '.'; animation: typingDots 1.5s steps(4, end) infinite; }
+        @keyframes typingDots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60%, 100% { content: '...'; } }
+
+        #input-area { display: flex; gap: 10px; padding-top: 5px; align-items: center; }
+        #message-input { flex-grow: 1; padding: 18px 25px; font-size: 1.1rem; border-radius: 20px; }
+        .input-actions { display: flex; gap: 10px; }
+
+        #users { width: 250px; padding: 20px; display: flex; flex-direction: column; gap: 15px; box-shadow: var(--clay-outer); border-radius: 30px; margin: 15px 15px 15px 0; transition: all 0.3s ease; flex-shrink: 0; }
+        #users.hidden { width: 0; margin: 0; padding: 0; opacity: 0; border: none; }
+        .user-category { font-size: 0.9rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; }
+        .user-item { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 15px; box-shadow: var(--clay-outer); transition: 0.2s; }
+        .user-avatar { width: 35px; height: 35px; border-radius: 50%; box-shadow: var(--clay-inner); background-size: cover; background-position: center; flex-shrink: 0; }
+        .user-name { font-weight: 700; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .status-connected { margin-top: auto; padding-top: 15px; border-top: 2px solid rgba(163, 177, 198, 0.2); font-weight: 800; font-size: 0.9rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; justify-content: center; }
+        .status-dot { width: 10px; height: 10px; background-color: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); animation: pulseStatus 2s infinite; }
+        @keyframes pulseStatus { 0% { transform: scale(0.9); opacity: 0.7; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(0.9); opacity: 0.7; } }
+
+        @media (max-width: 850px) {
+            #channels, #users { position: fixed; z-index: 500; height: calc(100% - 30px); top: 15px; background: var(--bg-color); box-shadow: var(--clay-outer); }
+            #channels { left: -300px; width: 250px; }
+            #users { right: -300px; width: 250px; }
+            #channels.active { left: 80px; }
+            #users.active { right: 15px; }
+            .mobile-toggle { display: flex !important; }
+        }
+        
+        .mobile-toggle { position: absolute; top: 15px; padding: 10px; z-index: 1000; display: none; }
+        #mobile-users-toggle { right: 15px; }
+        #mobile-rooms-toggle { left: 85px; }
+
+        #disband-logo { margin-bottom: 10px; transition: transform 0.4s; color: var(--accent); }
+        #disband-logo:hover { transform: rotate(10deg) scale(1.05); }
+
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+
+    <div id="info-panel">
+        <div class="info-close" onclick="toggleInfoPanel()">×</div>
+        <div class="info-title">The Disband Manifesto</div>
+        <div class="info-text">
+            Disband is a decentralized alternative to centralized communication tools. 
+            <br><br>
+            We believe that communities should <strong>disband</strong> from platforms that mine data and control content. 
+            <br><br>
+            By leveraging WebRTC, your conversations go directly from device to device. No middleman. No database. Total freedom.
+        </div>
+    </div>
+
+    <div id="custom-modal-overlay">
+        <div id="custom-modal">
+            <div id="custom-modal-title" class="onboarding-title" style="font-size: 1.4rem;"></div>
+            <div id="custom-modal-text" style="color: var(--text-muted); font-size: 1.1rem; font-weight: 600; margin-bottom: 5px;"></div>
+            <input type="text" id="custom-modal-input" class="clay-input" style="display: none; text-align: center;">
+            <input type="password" id="custom-modal-input-pass" class="clay-input" style="display: none; margin-top: 10px; text-align: center;" placeholder="Password (Optional)">
+            <div style="display: flex; gap: 15px; margin-top: 10px; width: 100%;">
+                <button id="custom-modal-cancel" class="clay-btn" style="flex: 1; background-color: var(--text-muted);">Cancel</button>
+                <button id="custom-modal-confirm" class="clay-btn" style="flex: 1;">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="splash-screen">
+        <div class="spinner"></div>
+        <div class="splash-text">INITIALIZING DISBAND</div>
+    </div>
+
+    <div id="onboarding">
+        <button class="clay-icon-btn theme-toggle-btn" onclick="toggleTheme()" title="Toggle Theme" id="theme-btn-1"></button>
+        <button class="clay-icon-btn info-toggle-btn" onclick="toggleInfoPanel()" title="About Disband">?</button>
+        <div id="onboarding-logo-container"></div>
+        <div class="onboarding-title">Welcome to Disband</div>
+        <input type="file" id="setup-avatar-file" accept="image/*" style="display: none;" onchange="handleAvatarUpload(event)">
+        <div id="avatar-preview" class="avatar-upload-circle" onclick="document.getElementById('setup-avatar-file').click()" title="Upload Avatar">
+            <span id="avatar-upload-text">+</span>
+        </div>
+        <input type="text" id="setup-name" class="clay-input" placeholder="Display Name">
+        <input type="text" id="setup-channel" class="clay-input" placeholder="Channel">
+        <button class="clay-btn" onclick="saveProfileAndJoin()">Connect</button>
+    </div>
+
+    <div id="main-app">
+        <div id="servers">
+            <div id="server-list-start"></div>
+            <div class="server-icon" id="add-server-btn" title="Join New Channel" onclick="promptNewServer()">+</div>
+            <div id="server-spacer" style="flex-grow: 1;"></div>
+            <div class="server-icon" id="toggle-rooms-btn" title="Toggle Rooms Sidebar" onclick="toggleRooms()">
+                <svg id="toggle-rooms-icon" style="transition: transform 0.3s;" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </div>
+            <button class="clay-icon-btn" onclick="toggleTheme()" title="Toggle Theme" id="theme-btn-2"></button>
+        </div>
+
+        <div id="channels">
+            <div class="channel-header">
+                <span id="ui-server-name">Rooms</span>
+                <button class="clay-icon-btn" id="create-room-btn" style="width: 32px; height: 32px; font-size: 1.2rem; display: none;" onclick="promptCreateRoom()" title="Create Protected Room">+</button>
+            </div>
+            <div id="channel-list-container">
+                <div class="channel-item active" id="ui-channel-name" onclick="attemptJoinRoom('# general', this)"><span># general</span></div>
+            </div>
+        </div>
+
+        <div class="clay-icon-btn mobile-toggle" id="mobile-rooms-toggle" onclick="toggleMobileMenu('channels')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </div>
+        <div class="clay-icon-btn mobile-toggle" id="mobile-users-toggle" onclick="toggleMobileMenu('users')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+        </div>
+
+        <div id="chat-area">
+            <div id="messages"></div>
+            <div class="typing-indicator" id="typing-indicator"><span id="typing-user"></span><span class="typing-dots"></span></div>
+            <div id="input-area">
+                <input type="text" id="message-input" class="clay-input" placeholder="Type a message..." autocomplete="off" onkeypress="handleKeyPress(event)" oninput="handleInput()">
+                <div class="input-actions">
+                    <input type="file" id="chat-image-input" accept="image/*" style="display: none;" onchange="handleImageMessage(event)">
+                    <button class="clay-icon-btn" onclick="document.getElementById('chat-image-input').click()" title="Attach Image">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    </button>
+                    <button class="clay-btn" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="users">
+            <div class="user-category">Online</div>
+            <div id="user-list-container" style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;"></div>
+            <div class="status-connected"><span class="status-dot"></span> Status: Connected</div>
+        </div>
+    </div>
+
+    <script>
+        const LOGO_SVG = `<svg id="disband-logo" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z" /><circle cx="9" cy="10" r="1" fill="currentColor" /><circle cx="15" cy="10" r="1" fill="currentColor" /></svg>`;
+        document.getElementById('onboarding-logo-container').innerHTML = LOGO_SVG;
+        document.getElementById('favicon').href = `data:image/svg+xml,${encodeURIComponent(LOGO_SVG.replace('width="60" height="60"', 'width="32" height="32"'))}`;
+
+        let userProfile = { id: crypto.randomUUID(), name: '', avatar: '', channel: '' };
+        let joinedNetworks = JSON.parse(localStorage.getItem('disband_networks')) || [];
+        let avatarBase64 = ''; 
+        let isMainAppOpen = false; 
+        let typingTimeout;
+        let roomPasswords = {}; 
+        let networkStates = {}; 
+        let networkRooms = {};  
+        let currentRoom = '# general';
+        let chatHistory = JSON.parse(localStorage.getItem('disband_history')) || {};
+        let currentLoadedCount = 10;
+        let p2pInstances = {}; 
+        let renderedMessageIds = new Set();
+
+        function toggleInfoPanel() { document.getElementById('info-panel').classList.toggle('open'); }
+        function toggleMobileMenu(id) { 
+            const el = document.getElementById(id);
+            const other = id === 'channels' ? 'users' : 'channels';
+            document.getElementById(other).classList.remove('active');
+            el.classList.toggle('active');
+        }
+
+        function toggleRooms() {
+            const channelsDiv = document.getElementById('channels');
+            const toggleIcon = document.getElementById('toggle-rooms-icon');
+            channelsDiv.classList.toggle('hidden');
+            toggleIcon.style.transform = channelsDiv.classList.contains('hidden') ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
+        let modalTimeout;
+        function showCustomModal(title, text, type, placeholders = []) {
+            return new Promise((resolve) => {
+                clearTimeout(modalTimeout);
+                const overlay = document.getElementById('custom-modal-overlay');
+                const modal = document.getElementById('custom-modal');
+                const titleEl = document.getElementById('custom-modal-title');
+                const textEl = document.getElementById('custom-modal-text');
+                const inputEl = document.getElementById('custom-modal-input');
+                const passEl = document.getElementById('custom-modal-input-pass');
+                const confirmBtn = document.getElementById('custom-modal-confirm');
+                const cancelBtn = document.getElementById('custom-modal-cancel');
+                titleEl.innerText = title; textEl.innerText = text; inputEl.value = ''; passEl.value = '';
+                if (type === 'prompt_with_pass') {
+                    inputEl.style.display = 'block'; inputEl.placeholder = placeholders[0] || '';
+                    passEl.style.display = 'block'; passEl.placeholder = placeholders[1] || 'Password (Optional)';
+                    setTimeout(() => inputEl.focus(), 100);
+                } else if (type === 'prompt' || type === 'password') {
+                    inputEl.style.display = 'block'; inputEl.type = type === 'password' ? 'password' : 'text';
+                    inputEl.placeholder = placeholders[0] || ''; passEl.style.display = 'none';
+                    setTimeout(() => inputEl.focus(), 100);
+                } else { inputEl.style.display = 'none'; passEl.style.display = 'none'; }
+                cancelBtn.style.display = type === 'alert' ? 'none' : 'block';
+                overlay.style.display = 'flex';
+                setTimeout(() => { overlay.style.opacity = '1'; modal.style.transform = 'scale(1)'; }, 10);
+                const closeModal = () => { overlay.style.opacity = '0'; modal.style.transform = 'scale(0.8)'; modalTimeout = setTimeout(() => overlay.style.display = 'none', 300); };
+                confirmBtn.onclick = () => { closeModal(); resolve(type === 'prompt_with_pass' ? { input: inputEl.value, pass: passEl.value } : (type === 'prompt' || type === 'password' ? inputEl.value : true)); };
+                cancelBtn.onclick = () => { closeModal(); resolve(null); };
+            });
+        }
+
+        const sunSVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
+        const moonSVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
+        let currentTheme = localStorage.getItem('disband_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        function updateThemeIcons() { const icon = currentTheme === 'light' ? moonSVG : sunSVG; document.getElementById('theme-btn-1').innerHTML = icon; document.getElementById('theme-btn-2').innerHTML = icon; }
+        function toggleTheme() { currentTheme = currentTheme === 'light' ? 'dark' : 'light'; document.documentElement.setAttribute('data-theme', currentTheme); localStorage.setItem('disband_theme', currentTheme); updateThemeIcons(); }
+
+        window.onload = () => { updateThemeIcons(); startCanvasAnimation(); setTimeout(() => { document.getElementById('splash-screen').style.opacity = '0'; setTimeout(() => { document.getElementById('splash-screen').style.display = 'none'; checkLocalStorage(); }, 500); }, 2500); };
+        function checkLocalStorage() { const savedProfile = localStorage.getItem('disband_profile'); if (savedProfile) { userProfile = JSON.parse(savedProfile); avatarBase64 = userProfile.avatar; loadMainApp(); } else { document.getElementById('onboarding').style.display = 'flex'; } }
+        function handleAvatarUpload(event) { const file = event.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = function(e) { avatarBase64 = e.target.result; const preview = document.getElementById('avatar-preview'); preview.style.backgroundImage = `url(${avatarBase64})`; document.getElementById('avatar-upload-text').style.display = 'none'; }; reader.readAsDataURL(file); } }
+        
+        async function saveProfileAndJoin() {
+            const name = document.getElementById('setup-name').value.trim();
+            const avatar = avatarBase64 || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + Math.random();
+            let channel = document.getElementById('setup-channel').value.trim().toLowerCase();
+            if (!name || !channel) { await showCustomModal("Required", "Name and Channel are required!", "alert"); return; }
+            if (!channel.startsWith('#')) channel = '#' + channel;
+            userProfile = { ...userProfile, name, avatar, channel };
+            localStorage.setItem('disband_profile', JSON.stringify(userProfile));
+            document.getElementById('onboarding').style.display = 'none'; loadMainApp();
+        }
+
+        async function promptNewServer() {
+            const result = await showCustomModal("Join New Channel", "Enter a New Channel", "prompt_with_pass", ["Channel Name", "Password (Optional)"]);
+            if (result && result.input.trim() !== '') {
+                let formatted = result.input.trim().toLowerCase();
+                if (!formatted.startsWith('#')) formatted = '#' + formatted;
+                if (!joinedNetworks.includes(formatted)) {
+                    joinedNetworks.push(formatted); localStorage.setItem('disband_networks', JSON.stringify(joinedNetworks));
+                    const icon = createServerIcon(formatted);
+                    document.getElementById('servers').insertBefore(icon, document.getElementById('add-server-btn'));
+                    switchServerView(formatted, icon);
+                } else {
+                    const icon = Array.from(document.querySelectorAll('.dynamic-server-icon')).find(el => el.title === formatted);
+                    if (icon) switchServerView(formatted, icon);
+                }
+            }
+        }
+
+        function createServerIcon(net) {
+            const icon = document.createElement('div'); icon.className = 'server-icon dynamic-server-icon'; icon.innerText = net.charAt(1).toUpperCase(); icon.title = net;
+            icon.onclick = () => switchServerView(net, icon);
+            icon.oncontextmenu = (e) => { e.preventDefault(); navigator.clipboard.writeText(net); addSystemMessage(`Copied Room ID: ${net}`, net); };
+            return icon;
+        }
+
+        async function promptCreateRoom() {
+            const net = userProfile.channel;
+            if (!networkStates[net]?.isHost) { await showCustomModal("Denied", "Only the Host can create rooms!", "alert"); return; }
+            const result = await showCustomModal("New Room", "Create a new room", "prompt_with_pass", ["Room Name", "Password (Optional)"]);
+            if (result && result.input.trim() !== '') {
+                let formatted = result.input.trim().toLowerCase(); if (!formatted.startsWith('#')) formatted = '#' + formatted;
+                let passIcon = ''; if (result.pass.trim() !== '') { roomPasswords[net + '_' + formatted] = result.pass.trim(); passIcon = ' <span title="Protected">🔒</span>'; }
+                if (!networkRooms[net]) networkRooms[net] = [{ name: '# general', passIcon: '' }];
+                networkRooms[net].push({ name: formatted, passIcon: passIcon });
+                syncRoomsToGuests(net); renderRoomList(net);
+                const item = Array.from(document.querySelectorAll('.channel-item')).find(el => el.innerText.includes(formatted));
+                if(item) attemptJoinRoom(formatted, item, passIcon);
+            }
+        }
+
+        async function attemptJoinRoom(roomName, element, passIcon = '') {
+            const net = userProfile.channel;
+            let passAttempt = '';
+            if (passIcon !== '' && !element.classList.contains('active')) {
+                passAttempt = await showCustomModal("Protected", `Enter password for ${roomName}:`, "password");
+                if (passAttempt === null) return;
+                roomPasswords[net + '_' + roomName] = passAttempt;
+            }
+            document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
+            element.classList.add('active'); element.id = 'ui-channel-name';
+            currentRoom = roomName; renderedMessageIds.clear();
+            if (networkStates[net] && !networkStates[net].isHost) requestHistoryFromHost(net, roomName, 10, 0, passAttempt);
+            else loadHistoryForRoomUI();
+            addSystemMessage(`Switched to room ${roomName}`, net);
+        }
+
+        function renderRoomList(net) {
+            const container = document.getElementById('channel-list-container'); container.innerHTML = '';
+            if (!networkRooms[net]) return;
+            networkRooms[net].forEach(room => {
+                const item = document.createElement('div'); item.className = 'channel-item' + (room.name === currentRoom ? ' active' : '');
+                if(room.name === currentRoom) item.id = 'ui-channel-name';
+                item.innerHTML = `<span>${room.name}</span>${room.passIcon}`;
+                item.onclick = () => attemptJoinRoom(room.name, item, room.passIcon);
+                container.appendChild(item);
+            });
+        }
+
+        function switchServerView(net, icon) {
+            document.querySelectorAll('.server-icon').forEach(el => el.classList.remove('active'));
+            if(icon) icon.classList.add('active');
+            userProfile.channel = net; localStorage.setItem('disband_profile', JSON.stringify(userProfile));
+            if (!networkRooms[net]) networkRooms[net] = [{ name: '# general', passIcon: '' }];
+            renderRoomList(net);
+            let target = Array.from(document.querySelectorAll('.channel-item')).find(el => el.innerText.includes(currentRoom)) || document.querySelector('.channel-item');
+            if (target) target.click();
+            document.getElementById('user-list-container').innerHTML = '';
+            initP2PNetwork(net);
+        }
+
+        function loadMainApp() {
+            isMainAppOpen = true; document.getElementById('bg-canvas').style.opacity = '0';
+            setTimeout(() => document.getElementById('bg-canvas').style.display = 'none', 500);
+            document.getElementById('main-app').style.display = 'flex';
+            if (userProfile.channel && !joinedNetworks.includes(userProfile.channel)) { joinedNetworks.push(userProfile.channel); localStorage.setItem('disband_networks', JSON.stringify(joinedNetworks)); }
+            joinedNetworks.forEach(net => {
+                const icon = createServerIcon(net);
+                document.getElementById('servers').insertBefore(icon, document.getElementById('add-server-btn'));
+                if (net === userProfile.channel) icon.classList.add('active');
+                initP2PNetwork(net);
+            });
+            switchServerView(userProfile.channel, document.querySelector('.server-icon.active'));
+        }
+
+        // --- CONTENT PARSING (IMAGES, VIDEO, YOUTUBE) ---
+        function parseContent(text) {
+            const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+            const imageRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp))/i;
+            const videoRegex = /(https?:\/\/.*\.(?:mp4|webm|ogg))/i;
+
+            let html = text;
+            const ytMatch = text.match(youtubeRegex);
+            if (ytMatch) html += `<div class="embed-container"><iframe width="100%" height="100%" src="https://www.youtube.com/embed/${ytMatch[1]}" frameborder="0" allowfullscreen></iframe></div>`;
+            
+            const imgMatch = text.match(imageRegex);
+            if (imgMatch) html += `<img src="${imgMatch[1]}" class="msg-image" onclick="window.open(this.src)">`;
+
+            const vidMatch = text.match(videoRegex);
+            if (vidMatch) html += `<video controls class="msg-video"><source src="${vidMatch[1]}"></video>`;
+
+            return html;
+        }
+
+        function saveMessageToHistory(net, room, msg) { 
+            if (!chatHistory[net]) chatHistory[net] = {}; 
+            if (!chatHistory[net][room]) chatHistory[net][room] = []; 
+            if (!chatHistory[net][room].find(m => m.msgId === msg.msgId)) {
+                chatHistory[net][room].push(msg); 
+                localStorage.setItem('disband_history', JSON.stringify(chatHistory)); 
+            }
+        }
+        
+        function requestHistoryFromHost(net, room, count, offset, pass = '') { const inst = p2pInstances[net]; if (inst?.hostConn) inst.hostConn.send({ type: 'HISTORY_REQUEST', room, count, offset, pass }); }
+        
+        function loadHistoryForRoomUI(hostTotalMessages = null) {
+            const net = userProfile.channel; const room = currentRoom;
+            if (!chatHistory[net]?.[room]) return;
+            const msgs = chatHistory[net][room]; const box = document.getElementById('messages'); 
+            box.innerHTML = ''; renderedMessageIds.clear();
+            const toLoad = msgs.slice(Math.max(msgs.length - currentLoadedCount, 0));
+            if ((hostTotalMessages || msgs.length) > currentLoadedCount) {
+                 const wrap = document.createElement('div'); wrap.style.textAlign = 'center';
+                 wrap.innerHTML = `<button class="clay-btn" style="padding: 10px 30px; font-size: 0.9rem;" onclick="loadMoreMessages()">Load Earlier Messages</button>`;
+                 box.appendChild(wrap);
+            }
+            toLoad.forEach(m => renderMessage(m.author, m.avatarUrl, m.content, m.msgId, m.media));
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function loadMoreMessages() {
+            const net = userProfile.channel;
+            if (networkStates[net]?.isHost) { currentLoadedCount += 10; loadHistoryForRoomUI(); } 
+            else { requestHistoryFromHost(net, currentRoom, 10, currentLoadedCount, roomPasswords[net + '_' + currentRoom] || ''); }
+        }
+
+        function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
+        function handleInput() { showTypingIndicator(userProfile.name); }
+        function showTypingIndicator(name) {
+            const ind = document.getElementById('typing-indicator'); document.getElementById('typing-user').innerText = name + " is typing";
+            ind.style.display = 'block'; clearTimeout(typingTimeout); typingTimeout = setTimeout(() => ind.style.display = 'none', 1500);
+        }
+
+        // --- PASTE SUPPORT FOR IMAGES ---
+        window.addEventListener('paste', e => {
+            if (!isMainAppOpen) return;
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let item of items) {
+                if (item.type.indexOf("image") === 0) {
+                    const blob = item.getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = event => sendImage(event.target.result);
+                    reader.readAsDataURL(blob);
+                }
+            }
+        });
+
+        function handleImageMessage(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = event => sendImage(event.target.result);
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function sendImage(base64) {
+            const msgId = crypto.randomUUID();
+            const msgObj = { msgId, senderId: userProfile.id, author: userProfile.name, avatarUrl: userProfile.avatar, content: '', media: { type: 'image', data: base64 } };
+            saveMessageToHistory(userProfile.channel, currentRoom, msgObj);
+            renderMessage(msgObj.author, msgObj.avatarUrl, '', msgId, msgObj.media);
+            broadcastToNetwork(userProfile.channel, { type: 'CHAT_MESSAGE', room: currentRoom, msg: msgObj });
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('message-input'); const text = input.value.trim();
+            if (!text) return;
+            const msgId = crypto.randomUUID();
+            const msgObj = { msgId, senderId: userProfile.id, author: userProfile.name, avatarUrl: userProfile.avatar, content: text };
+            saveMessageToHistory(userProfile.channel, currentRoom, msgObj);
+            renderMessage(msgObj.author, msgObj.avatarUrl, msgObj.content, msgId);
+            broadcastToNetwork(userProfile.channel, { type: 'CHAT_MESSAGE', room: currentRoom, msg: msgObj });
+            input.value = ''; document.getElementById('typing-indicator').style.display = 'none';
+        }
+
+        function renderMessage(author, avatarUrl, content, msgId, media = null) {
+            if (msgId && renderedMessageIds.has(msgId)) return;
+            if (msgId) renderedMessageIds.add(msgId);
+            const div = document.createElement('div'); div.className = 'message';
+            let mediaHtml = '';
+            if (media && media.type === 'image') mediaHtml = `<img src="${media.data}" class="msg-image" onclick="window.open(this.src)">`;
+            
+            div.innerHTML = `<div class="msg-avatar" style="background-image: url('${avatarUrl}')"></div><div class="msg-body"><span class="msg-author">${author}</span><span class="msg-content">${parseContent(content)}</span>${mediaHtml}</div>`;
+            const box = document.getElementById('messages'); box.appendChild(div); box.scrollTop = box.scrollHeight; return div;
+        }
+
+        function addSystemMessage(text, net = null) {
+            if (net && net !== userProfile.channel) return;
+            const div = renderMessage('System', 'https://api.dicebear.com/7.x/shapes/svg?seed=sys', text);
+            div.classList.add('system-message');
+            setTimeout(() => { div.style.opacity = '0'; div.style.transform = 'translateY(-10px)'; setTimeout(() => div.remove(), 500); }, 6000);
+        }
+
+        function renderUserList(net) {
+            if (net !== userProfile.channel) return;
+            const container = document.getElementById('user-list-container'); container.innerHTML = '';
+            if (!networkStates[net]) return;
+            networkStates[net].users.forEach(u => {
+                const div = document.createElement('div'); div.className = 'user-item';
+                const crown = u.isRoomHost ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" style="margin-left:auto;"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5z"></path></svg>` : '';
+                div.innerHTML = `<div class="user-avatar" id="avatar-${net}-${u.id}" style="background-image: url('${u.avatarUrl || ''}')"></div><span class="user-name">${u.name}${u.id === userProfile.id ? ' (You)' : ''}</span>${crown}`;
+                container.appendChild(div);
+            });
+            document.getElementById('create-room-btn').style.display = networkStates[net].isHost ? 'flex' : 'none';
+        }
+
+        function initP2PNetwork(net) {
+            if (networkStates[net]) { if (net === userProfile.channel) renderUserList(net); return; }
+            addSystemMessage(`Connecting to ${net}...`, net);
+            const hostId = 'disband-net-' + net.replace(/[^a-zA-Z0-9]/g, '');
+            const peer = new Peer(); let resolved = false;
+            peer.on('open', () => {
+                const conn = peer.connect(hostId, { reliable: true });
+                conn.on('open', () => { resolved = true; setupGuestP2P(net, peer, conn); });
+            });
+            peer.on('error', (err) => { if (err.type === 'peer-unavailable' && !resolved) { resolved = true; peer.destroy(); becomeHostP2P(net, hostId); } });
+        }
+
+        function syncRoomsToGuests(net) {
+            if(!p2pInstances[net]?.isHost) return;
+            const rooms = networkRooms[net].map(r => ({ name: r.name, hasPassword: !!roomPasswords[net + '_' + r.name] }));
+            broadcastToNetwork(net, { type: 'ROOM_LIST_SYNC', rooms });
+        }
+
+        function becomeHostP2P(net, hostId) {
+            const hostPeer = new Peer(hostId);
+            p2pInstances[net] = { peer: hostPeer, isHost: true, connections: [] };
+            hostPeer.on('open', () => {
+                networkStates[net] = { isHost: true, users: [{ id: userProfile.id, name: userProfile.name, avatarUrl: userProfile.avatar, isRoomHost: true }] };
+                if (net === userProfile.channel) renderUserList(net);
+                addSystemMessage(`You are hosting ${net}.`, net);
+            });
+            hostPeer.on('connection', (conn) => {
+                conn.on('data', (data) => {
+                    if (data.type === 'AUTH') {
+                        if (roomPasswords[net] && data.pass !== roomPasswords[net]) { conn.send({ type: 'AUTH_FAILED' }); setTimeout(() => conn.close(), 500); return; }
+                        p2pInstances[net].connections.push(conn);
+                        if (!networkStates[net].users.find(u => u.id === data.user.id)) { 
+                            networkStates[net].users.push(data.user); 
+                            addSystemMessage(`${data.user.name} joined.`, net); 
+                        }
+                        // Host updates their own list immediately
+                        renderUserList(net);
+                        // Broadcast updated user list to everyone
+                        broadcastToNetwork(net, { type: 'USER_LIST_SYNC', users: networkStates[net].users.map(u => ({...u, avatarUrl: u.avatarUrl})) }); 
+                        syncRoomsToGuests(net);
+                        setTimeout(() => {
+                            const msgs = chatHistory[net]?.['# general'] || [];
+                            conn.send({ type: 'HISTORY_SYNC', room: '# general', messages: msgs.slice(-10), offset: 0, total: msgs.length });
+                        }, 500);
+                    }
+                    if (data.type === 'HISTORY_REQUEST') {
+                        const msgs = chatHistory[net]?.[data.room] || []; const end = msgs.length - data.offset;
+                        conn.send({ type: 'HISTORY_SYNC', room: data.room, messages: end > 0 ? msgs.slice(Math.max(0, end - data.count), end) : [], offset: data.offset, total: msgs.length });
+                    }
+                    if (data.type === 'CHAT_MESSAGE') {
+                        saveMessageToHistory(net, data.room, data.msg);
+                        if (net === userProfile.channel && data.room === currentRoom) renderMessage(data.msg.author, data.msg.avatarUrl, data.msg.content, data.msg.msgId, data.msg.media);
+                        p2pInstances[net].connections.forEach(c => { if (c.peer !== conn.peer) c.send(data); });
+                    }
+                });
+                conn.on('close', () => { p2pInstances[net].connections = p2pInstances[net].connections.filter(c => c.peer !== conn.peer); });
+            });
+        }
+
+        function setupGuestP2P(net, guestPeer, hostConn) {
+            p2pInstances[net] = { peer: guestPeer, isHost: false, hostConn };
+            networkStates[net] = { isHost: false, users: [] };
+            addSystemMessage(`Connected to Host.`, net);
+            hostConn.send({ type: 'AUTH', pass: roomPasswords[net] || '', user: { id: userProfile.id, name: userProfile.name, avatarUrl: userProfile.avatar, isRoomHost: false } });
+            hostConn.on('data', (data) => {
+                if (data.type === 'AUTH_FAILED') { addSystemMessage("Invalid Password.", net); hostConn.close(); }
+                if (data.type === 'USER_LIST_SYNC') { networkStates[net].users = data.users; renderUserList(net); }
+                if (data.type === 'ROOM_LIST_SYNC') { networkRooms[net] = data.rooms.map(r => ({ name: r.name, passIcon: r.hasPassword ? ' <span title="Protected">🔒</span>' : '' })); renderRoomList(net); }
+                if (data.type === 'HISTORY_SYNC') {
+                    if (!chatHistory[net]) chatHistory[net] = {}; if (!chatHistory[net][data.room]) chatHistory[net][data.room] = [];
+                    const existingIds = new Set(chatHistory[net][data.room].map(m => m.msgId));
+                    const newUniqueMessages = data.messages.filter(m => !existingIds.has(m.msgId));
+                    if (data.offset === 0) chatHistory[net][data.room] = [...chatHistory[net][data.room], ...newUniqueMessages];
+                    else chatHistory[net][data.room] = [...newUniqueMessages, ...chatHistory[net][data.room]];
+                    localStorage.setItem('disband_history', JSON.stringify(chatHistory));
+                    if (net === userProfile.channel && data.room === currentRoom) {
+                        currentLoadedCount = Math.max(currentLoadedCount, chatHistory[net][data.room].length);
+                        loadHistoryForRoomUI(data.total);
+                    }
+                }
+                if (data.type === 'CHAT_MESSAGE') {
+                    if (data.msg.senderId === userProfile.id) return;
+                    saveMessageToHistory(net, data.room, data.msg);
+                    if (net === userProfile.channel && data.room === currentRoom) renderMessage(data.msg.author, data.msg.avatarUrl, data.msg.content, data.msg.msgId, data.msg.media);
+                }
+            });
+            hostConn.on('close', () => {
+                addSystemMessage("Host lost. Promoting survivor...", net);
+                const rank = networkStates[net]?.users.findIndex(u => u.id === userProfile.id) || 999;
+                if (p2pInstances[net]) { p2pInstances[net].peer.destroy(); delete p2pInstances[net]; }
+                delete networkStates[net]; 
+                setTimeout(() => initP2PNetwork(net), rank > 0 ? rank * 1500 : 2000);
+            });
+        }
+
+        function broadcastToNetwork(net, data) {
+            const inst = p2pInstances[net]; if (!inst) return;
+            if (inst.isHost) inst.connections.forEach(c => c.send(data)); else if (inst.hostConn) inst.hostConn.send(data);
+        }
+
+        function startCanvasAnimation() {
+            const canvas = document.getElementById('bg-canvas'); const ctx = canvas.getContext('2d');
+            let w = canvas.width = window.innerWidth; let h = canvas.height = window.innerHeight; let t = 0;
+            const stars = Array.from({length: 150}, () => ({ x: Math.random() * w, y: Math.random() * h, r: Math.random() * 1.5, a: Math.random() }));
+            function draw() {
+                if (isMainAppOpen) return; ctx.clearRect(0, 0, w, h); const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+                stars.forEach(s => { s.a += (Math.random() - 0.5) * 0.15; s.y -= Math.random() * 0.4; if (s.y < 0) s.y = h; ctx.fillStyle = `rgba(${dark ? '255,255,255' : '40,40,60'}, ${Math.max(0.1, Math.min(dark ? 0.9 : 0.6, s.a))})`; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill(); });
+                const colors = dark ? ['#1e4a4c', '#276966', '#5a7b82'] : ['#84b5b2', '#a3c9c7', '#c1d9d8']; ctx.globalCompositeOperation = 'source-over';
+                for(let i = 0; i < 3; i++) { ctx.beginPath(); ctx.fillStyle = colors[i]; ctx.moveTo(0, h); for(let x = 0; x <= w; x += 20) { ctx.lineTo(x, h - (150 - (i * 40)) + Math.sin(x * 0.002 + t + i * 1.2) * (70 - i * 10) + Math.sin(x * 0.005 + t * 0.8) * 30); } ctx.lineTo(w, h); ctx.closePath(); ctx.fill(); }
+                t += 0.015; requestAnimationFrame(draw);
+            }
+            window.addEventListener('resize', () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }); draw();
+        }
+    </script>
+</body>
+</html>
