@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Disband</title>
+    <!-- Custom Favicon (SVG Logo) -->
     <link id="favicon" rel="icon" type="image/svg+xml" href="">
+    <!-- Import PeerJS for Serverless WebRTC Signaling -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
@@ -112,20 +114,23 @@
         
         /* Dynamic Media Player */
         #media-container { display: none; flex-direction: column; gap: 10px; padding: 15px; border-radius: 20px; box-shadow: var(--clay-outer); background: var(--bg-color); flex-shrink: 0; animation: popInBounce 0.4s forwards; position: relative; overflow: hidden; }
-        .media-header { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 1rem; color: var(--accent); padding-bottom: 10px; border-bottom: 1px solid rgba(0,0,0,0.05); }
-        .media-feed { width: 100%; max-height: 45vh; border-radius: 12px; background: #000; object-fit: contain; box-shadow: var(--clay-inner); display: none; }
+        .media-header { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 1rem; color: var(--accent); padding-bottom: 5px; border-bottom: 1px solid rgba(0,0,0,0.05); }
         
+        /* Video Feed */
+        .media-feed { width: 100%; max-height: 40vh; border-radius: 12px; background: #000; object-fit: contain; box-shadow: var(--clay-inner); display: none; }
+        
+        /* Voice Mesh Container */
         #media-voice-container { display: none; flex-wrap: wrap; gap: 15px; justify-content: center; align-items: center; padding: 15px 0; }
-        .voice-avatar { width: 70px; height: 70px; border-radius: 50%; box-shadow: var(--clay-outer); background-size: cover; background-position: center; border: 3px solid transparent; animation: pulseVoice 2.5s infinite alternate; }
+        .voice-avatar { width: 70px; height: 70px; border-radius: 50%; box-shadow: var(--clay-outer); background-size: cover; background-position: center; border: 3px solid transparent; animation: pulseVoice 2.5s infinite alternate; transition: 0.3s; }
         .voice-avatar.local { border-color: var(--accent); }
         @keyframes pulseVoice { 0% { transform: scale(0.95); box-shadow: var(--clay-inner); } 100% { transform: scale(1.05); box-shadow: var(--clay-outer); } }
 
-        .media-controls { display: flex; gap: 10px; justify-content: center; }
+        .media-controls { display: flex; gap: 10px; justify-content: center; margin-top: 5px; }
 
         #messages { flex-grow: 1; padding: 20px; border-radius: 30px; box-shadow: var(--clay-inner); overflow-y: auto; display: flex; flex-direction: column; gap: 25px; }
         
         @keyframes popInBounce { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 60% { opacity: 1; transform: scale(1.02) translateY(-2px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
-        .message { display: flex; gap: 15px; animation: popInBounce 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .message { display: flex; gap: 15px; animation: popInBounce 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; transform-origin: left center; }
         .msg-avatar { width: 42px; height: 42px; border-radius: 50%; box-shadow: var(--clay-outer); background-size: cover; background-position: center; flex-shrink: 0; }
         .msg-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; width: 100%; }
         .msg-author { font-weight: 800; color: var(--text-main); font-size: 1.05rem; }
@@ -606,7 +611,6 @@
             const net = userProfile.channel;
             let passAttempt = '';
             
-            // Limit Media Rooms to 4 Occupants
             const roomObj = networkRooms[net]?.find(r => r.name === roomName);
             if (roomObj && roomObj.mediaType) {
                 const occupants = (networkStates[net]?.users || []).filter(u => u.currentRoom === roomName).length;
@@ -639,6 +643,59 @@
         }
 
         // --- BROADCASTER & VIEWER LOGIC ---
+        function handleVoiceStream(call, userId, avatarUrl) {
+            activePeerCalls[call.peer] = call;
+            call.on('stream', remoteStream => {
+                if (!document.getElementById('audio-' + call.peer)) {
+                    const audio = document.createElement('audio');
+                    audio.id = 'audio-' + call.peer;
+                    audio.srcObject = remoteStream;
+                    audio.autoplay = true;
+                    document.body.appendChild(audio); 
+                    addVoiceAvatar(userId || call.peer, avatarUrl, false);
+                }
+            });
+            call.on('close', () => {
+                const audio = document.getElementById('audio-' + call.peer);
+                if (audio) audio.remove();
+                removeVoiceAvatar(userId || call.peer);
+                delete activePeerCalls[call.peer];
+            });
+        }
+
+        function addVoiceAvatar(userId, avatarUrl, isLocal) {
+            const container = document.getElementById('media-voice-container');
+            if (document.getElementById('voice-avatar-' + userId)) return;
+            const avatar = document.createElement('div');
+            avatar.id = 'voice-avatar-' + userId;
+            avatar.className = 'voice-avatar' + (isLocal ? ' local' : '');
+            avatar.style.backgroundImage = `url('${avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=voice'}')`;
+            container.appendChild(avatar);
+        }
+
+        function removeVoiceAvatar(userId) {
+            const el = document.getElementById('voice-avatar-' + userId);
+            if (el) el.remove();
+        }
+
+        function toggleMute() {
+            if (localMediaStream) {
+                const audioTrack = localMediaStream.getAudioTracks()[0];
+                if (audioTrack) {
+                    audioTrack.enabled = !audioTrack.enabled;
+                    const btn = document.getElementById('media-mute-btn');
+                    btn.innerHTML = audioTrack.enabled ? '🎤' : '🔇';
+                    btn.style.backgroundColor = audioTrack.enabled ? 'var(--bg-color)' : '#e53e3e';
+                    btn.style.color = audioTrack.enabled ? 'var(--text-main)' : '#fff';
+                    const myAvatar = document.getElementById('voice-avatar-' + userProfile.id);
+                    if (myAvatar) {
+                        myAvatar.style.opacity = audioTrack.enabled ? '1' : '0.5';
+                        myAvatar.style.animationPlayState = audioTrack.enabled ? 'running' : 'paused';
+                    }
+                }
+            }
+        }
+
         async function initMediaForRoom(net, roomObj) {
             const mediaContainer = document.getElementById('media-container');
             const mediaFeed = document.getElementById('media-feed');
@@ -656,12 +713,13 @@
 
             if (localMediaStream) { localMediaStream.getTracks().forEach(t => t.stop()); localMediaStream = null; }
             Object.values(activePeerCalls).forEach(c => c.close()); activePeerCalls = {};
+            document.querySelectorAll('audio[id^="audio-"]').forEach(a => a.remove());
 
             if (!roomObj || !roomObj.mediaType) return;
 
             mediaContainer.style.display = 'flex';
             const isBroadcaster = roomObj.broadcasterId === userProfile.id;
-            const bUser = networkStates[net].users.find(u => u.id === roomObj.broadcasterId);
+            const bUser = networkStates[net]?.users.find(u => u.id === roomObj.broadcasterId);
             
             if (roomObj.mediaType === 'screen') {
                 mediaTitle.innerText = isBroadcaster ? "Broadcasting Screen" : `Viewing ${bUser ? bUser.name : 'Screen'}`;
@@ -698,64 +756,16 @@
                     
                     addVoiceAvatar(userProfile.id, userProfile.avatar, true);
 
-                    // Call all current occupants
+                    // Mesh call all current occupants
                     const peersInRoom = networkStates[net].users.filter(u => u.currentRoom === currentRoom && u.id !== userProfile.id);
                     peersInRoom.forEach(p => {
                         if (p.peerId && p2pInstances[net]?.peer) {
-                            const call = p2pInstances[net].peer.call(p.peerId, localMediaStream, { metadata: { room: currentRoom, mediaType: 'voice', callerId: userProfile.id } });
+                            const call = p2pInstances[net].peer.call(p.peerId, localMediaStream, { metadata: { room: currentRoom, mediaType: 'voice' } });
                             handleVoiceStream(call, p.id, p.avatarUrl);
                         }
                     });
                 } catch (e) {
                     addSystemMessage("Microphone access denied.", net); hangUpMedia(false);
-                }
-            }
-        }
-
-        function handleVoiceStream(call, userId, avatarUrl) {
-            activePeerCalls[call.peer] = call;
-            call.on('stream', remoteStream => {
-                if (!document.getElementById('audio-' + call.peer)) {
-                    const audio = document.createElement('audio');
-                    audio.id = 'audio-' + call.peer;
-                    audio.srcObject = remoteStream;
-                    audio.autoplay = true;
-                    document.body.appendChild(audio); 
-                    addVoiceAvatar(userId, avatarUrl, false);
-                }
-            });
-            call.on('close', () => {
-                const audio = document.getElementById('audio-' + call.peer);
-                if (audio) audio.remove();
-                removeVoiceAvatar(userId);
-                delete activePeerCalls[call.peer];
-            });
-        }
-
-        function addVoiceAvatar(userId, avatarUrl, isLocal) {
-            const container = document.getElementById('media-voice-container');
-            if (document.getElementById('voice-avatar-' + userId)) return;
-            const avatar = document.createElement('div');
-            avatar.id = 'voice-avatar-' + userId;
-            avatar.className = 'voice-avatar' + (isLocal ? ' local' : '');
-            avatar.style.backgroundImage = `url('${avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=voice'}')`;
-            container.appendChild(avatar);
-        }
-
-        function removeVoiceAvatar(userId) {
-            const el = document.getElementById('voice-avatar-' + userId);
-            if (el) el.remove();
-        }
-
-        function toggleMute() {
-            if (localMediaStream) {
-                const audioTrack = localMediaStream.getAudioTracks()[0];
-                if (audioTrack) {
-                    audioTrack.enabled = !audioTrack.enabled;
-                    const btn = document.getElementById('media-mute-btn');
-                    btn.innerHTML = audioTrack.enabled ? '🎤' : '🔇';
-                    btn.style.backgroundColor = audioTrack.enabled ? 'var(--bg-color)' : '#e53e3e';
-                    btn.style.color = audioTrack.enabled ? 'var(--text-main)' : '#fff';
                 }
             }
         }
@@ -767,10 +777,10 @@
             if (localMediaStream) { localMediaStream.getTracks().forEach(t => t.stop()); localMediaStream = null; }
             if (incomingMediaCall) { incomingMediaCall.close(); incomingMediaCall = null; }
             Object.values(activePeerCalls).forEach(c => c.close()); activePeerCalls = {};
-            
             document.querySelectorAll('audio[id^="audio-"]').forEach(a => a.remove());
 
-            document.getElementById('media-feed').srcObject = null;
+            const mediaFeed = document.getElementById('media-feed');
+            if(mediaFeed) mediaFeed.srcObject = null;
             document.getElementById('media-container').style.display = 'none';
 
             if (roomObj && roomObj.broadcasterId === userProfile.id && !isSilent) {
@@ -834,20 +844,29 @@
             switchServerView(userProfile.channel, document.querySelector('.server-icon.active'));
         }
 
-        // --- PARSING ---
+        // --- CONTENT PARSING & PREVIEWS ---
         function fetchAndRenderPreview(url, previewId) {
             fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`)
                 .then(res => res.ok ? res.json() : Promise.reject(res))
                 .then(data => {
                     const doc = new DOMParser().parseFromString(data.contents, 'text/html');
                     const getMeta = (prop) => doc.querySelector(`meta[property="${prop}"], meta[name="${prop}"]`)?.content || '';
+                    
                     let title = getMeta('og:title') || doc.title || '';
                     let desc = getMeta('og:description') || getMeta('description') || '';
                     let img = getMeta('og:image') || '';
+                    
                     if (title) {
                         const container = document.getElementById(previewId);
                         if (container) {
-                            container.innerHTML = `<a href="${url}" target="_blank" class="rich-link-preview"><div class="rich-link-provider">${new URL(url).hostname.replace('www.','')}</div><div class="rich-link-title">${title}</div>${desc ? `<div class="rich-link-desc">${desc}</div>` : ''}${img ? `<img src="${img}" class="rich-link-img" onload="const b=document.getElementById('messages'); b.scrollTop=b.scrollHeight;">` : ''}</a>`;
+                            container.innerHTML = `
+                                <a href="${url}" target="_blank" class="rich-link-preview">
+                                    <div class="rich-link-provider">${new URL(url).hostname.replace('www.','')}</div>
+                                    <div class="rich-link-title">${title}</div>
+                                    ${desc ? `<div class="rich-link-desc">${desc}</div>` : ''}
+                                    ${img ? `<img src="${img}" class="rich-link-img" onload="const b=document.getElementById('messages'); b.scrollTop=b.scrollHeight;">` : ''}
+                                </a>
+                            `;
                         }
                     }
                 }).catch(e => {});
@@ -861,12 +880,19 @@
             return text.replace(generalUrlRegex, (url) => {
                 const ytMatch = url.match(youtubeRegex);
                 if (ytMatch) return `<div class="embed-container"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}" frameborder="0" allowfullscreen></iframe></div>`;
+                
                 const vidMatch = url.match(videoRegex);
                 if (vidMatch) return `<video controls class="msg-video"><source src="${vidMatch[1]}"></video>`;
                 
                 const previewId = 'preview-' + crypto.randomUUID();
                 setTimeout(() => fetchAndRenderPreview(url, previewId), 50);
-                return `<div id="${previewId}"><a href="${url}" target="_blank" class="link-preview"><div class="link-preview-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></div><span class="link-text">${url}</span></a></div>`;
+                
+                return `<div id="${previewId}">
+                            <a href="${url}" target="_blank" class="link-preview">
+                                <div class="link-preview-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></div>
+                                <span class="link-text">${url}</span>
+                            </a>
+                        </div>`;
             });
         }
 
@@ -882,7 +908,10 @@
                 canvas.getContext('2d').drawImage(img, 0, 0, w, h);
                 const optimized = canvas.toDataURL('image/jpeg', 0.5); 
                 
-                const msg = { msgId: crypto.randomUUID(), senderId: userProfile.id, author: userProfile.name, avatarUrl: userProfile.avatar, content: '', image: optimized, room: currentRoom };
+                const msg = { 
+                    msgId: crypto.randomUUID(), senderId: userProfile.id, author: userProfile.name, avatarUrl: userProfile.avatar, 
+                    content: '', image: optimized, room: currentRoom 
+                };
                 saveMessageToHistory(userProfile.channel, currentRoom, msg);
                 renderMessage(msg);
                 broadcastToNetwork(userProfile.channel, { type: 'CHAT', msg });
@@ -911,7 +940,6 @@
             }
         }
 
-        // --- TYPING ---
         function handleInput() { 
             broadcastToNetwork(userProfile.channel, { type: 'TYPING', room: currentRoom, name: userProfile.name, senderId: userProfile.id });
         }
@@ -1029,6 +1057,7 @@
             const hostId = 'disband-net-' + net.replace(/[^a-zA-Z0-9]/g, '');
             const peer = new Peer(PEER_CONFIG); let resolved = false;
             
+            // Guest answering incoming call (Screen or Voice)
             peer.on('call', call => {
                 const room = call.metadata?.room;
                 const mType = call.metadata?.mediaType;
@@ -1066,6 +1095,7 @@
             const hostPeer = new Peer(hostId, PEER_CONFIG);
             p2pInstances[net] = { peer: hostPeer, isHost: true, connections: [] };
             
+            // Host answering incoming call (Screen or Voice)
             hostPeer.on('call', call => {
                 const room = call.metadata?.room;
                 const mType = call.metadata?.mediaType;
@@ -1117,8 +1147,9 @@
                     }
                     if (data.type === 'ROOM_CHANGE') {
                         const u = networkStates[net].users.find(u => u.id === data.user.id);
-                        if (u) u.currentRoom = data.room;
+                        if (u) { u.currentRoom = data.room; u.peerId = data.user.peerId; }
                         broadcastToNetwork(net, { type: 'USER_LIST_SYNC', users: networkStates[net].users });
+                        broadcastToNetwork(net, data); // Forward to Broadcaster to trigger screen calls
                         return;
                     }
                     if (data.type === 'DELETE_ROOM') {
@@ -1156,9 +1187,18 @@
                 if (data.type === 'USER_LIST_SYNC') { networkStates[net].users = data.users; renderUserList(net); }
                 if (data.type === 'ROOM_LIST_SYNC') { networkRooms[net] = data.rooms.map(r => ({ name: r.name, passIcon: r.hasPassword ? ' <span title="Protected">🔒</span>' : '', mediaType: r.mediaType, broadcasterId: r.broadcasterId })); renderRoomList(net); }
                 
+                if (data.type === 'ROOM_CHANGE') {
+                    // If I am the Broadcaster and someone just joined my room
+                    const myRoom = networkRooms[net]?.find(r => r.name === currentRoom && r.broadcasterId === userProfile.id);
+                    if (myRoom && data.room === currentRoom && data.user.id !== userProfile.id) {
+                        if (data.user.peerId && localMediaStream) {
+                            p2pInstances[net].peer.call(data.user.peerId, localMediaStream, { metadata: { room: currentRoom, mediaType: myRoom.mediaType } });
+                        }
+                    }
+                }
                 if (data.type === 'FORCE_ROOM') {
                     if (currentRoom === data.oldRoom) {
-                        addSystemMessage("Room closed.", net);
+                        addSystemMessage("Room closed by broadcaster.", net);
                         const genRoom = document.querySelector('.channel-item');
                         if (genRoom) genRoom.click();
                     }
